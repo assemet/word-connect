@@ -197,7 +197,7 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
   level: number; progress: Progress; setProgress: React.Dispatch<React.SetStateAction<Progress>>;
   settings: Settings; totalStars: number; back: () => void; onComplete: (gain: number) => void;
 }) {
-  const data = LEVELS[level - 1];
+  const data = LEVELS[level - 1]!;
   const words = useMemo(() => [...data.words].sort((a, b) => a.length - b.length || a.localeCompare(b)), [data]);
   const found = progress.found[level] ?? [];
   const revealed = progress.revealed[level] ?? [];
@@ -409,7 +409,7 @@ function PowerBtn({ icon, cost, onClick, label }: { icon: React.ReactNode; cost:
 }
 
 function CompleteScreen({ level, gain, hasNext, onNext, onHome }: { level: number; gain: number; hasNext: boolean; onNext: () => void; onHome: () => void }) {
-  const words = LEVELS[level - 1].words.length;
+  const words = LEVELS[level - 1]!.words.length;
   return (
     <div className="flex flex-1 items-center justify-center bg-navy/50 p-6">
       <div className="animate-pop relative w-full max-w-xs rounded-3xl bg-cream p-6 pt-12 text-center shadow-2xl">
