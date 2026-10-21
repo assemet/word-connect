@@ -215,13 +215,14 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
     return { x: size / 2 + r * Math.cos(a), y: size / 2 + r * Math.sin(a) };
   });
 
+  const P = (i: number) => pos[i] ?? { x: 0, y: 0 };
   const current = path.map((i) => letters[i]).join("");
 
   const idxAt = (cx: number, cy: number) => {
     const rect = wheelRef.current!.getBoundingClientRect();
     const x = cx - rect.left, y = cy - rect.top;
     for (let i = 0; i < pos.length; i++) {
-      if (Math.hypot(pos[i].x - x, pos[i].y - y) < 28) return i;
+      if (Math.hypot(P(i).x - x, P(i).y - y) < 28) return i;
     }
     return -1;
   };
@@ -368,7 +369,7 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
           >
             <svg className="pointer-events-none absolute inset-0" width={size} height={size}>
               <polyline
-                points={[...path.map((i) => `${pos[i].x},${pos[i].y}`), ...(pointer && path.length ? [`${pointer.x},${pointer.y}`] : [])].join(" ")}
+                points={[...path.map((i) => `${P(i).x},${P(i).y}`), ...(pointer && path.length ? [`${pointer.x},${pointer.y}`] : [])].join(" ")}
                 fill="none" stroke="var(--gold)" strokeWidth={8} strokeLinecap="round" strokeLinejoin="round" opacity={0.9}
               />
             </svg>
@@ -384,7 +385,7 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
               <span key={i}
                 className={`pointer-events-none absolute flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full font-display text-3xl font-bold shadow-md transition-colors ${
                   path.includes(i) ? "bg-gold text-navy" : "bg-card text-navy"}`}
-                style={{ left: pos[i].x, top: pos[i].y }}>
+                style={{ left: P(i).x, top: P(i).y }}>
                 {ch}
               </span>
             ))}
