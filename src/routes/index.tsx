@@ -12,7 +12,7 @@ import bg5 from "@/assets/bg5.jpg";
 import bg6 from "@/assets/bg6.jpg";
 
 const BACKGROUNDS = [bg1, bg2, bg3, bg4, bg5, bg6];
-export const backgroundForLevel = (n: number) => BACKGROUNDS[Math.min(Math.floor((n - 1) / 20), BACKGROUNDS.length - 1)]!;
+const backgroundForLevel = (n: number) => BACKGROUNDS[Math.min(Math.floor((n - 1) / 20), BACKGROUNDS.length - 1)]!;
 import { LEVELS } from "@/data/words";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { initTelegram, haptic, beep } from "@/lib/telegram";
