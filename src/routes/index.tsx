@@ -15,6 +15,7 @@ const BACKGROUNDS = [bg1, bg2, bg3, bg4, bg5, bg6];
 const backgroundForLevel = (n: number) => BACKGROUNDS[Math.min(Math.floor((n - 1) / 20), BACKGROUNDS.length - 1)]!;
 import { LEVELS } from "@/data/words";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useBackgroundMusic } from "@/hooks/useBackgroundMusic";
 import { initTelegram, haptic, beep } from "@/lib/telegram";
 import { scoreForWord, shuffle, HINT_COST, REVEAL_COST } from "@/lib/game";
 
@@ -50,8 +51,9 @@ function App() {
   const [screen, setScreen] = useState<Screen>("home");
   const [level, setLevel] = useState(1);
   const [progress, setProgress] = useLocalStorage<Progress>("wc-progress", initProgress);
-  const [settings, setSettings] = useLocalStorage<Settings>("wc-settings", initSettings);
+  const [settings, setSettings, settingsLoaded] = useLocalStorage<Settings>("wc-settings", initSettings);
   const [lastGain, setLastGain] = useState(0);
+  useBackgroundMusic(settingsLoaded && settings.music);
 
   useEffect(() => initTelegram(), []);
 

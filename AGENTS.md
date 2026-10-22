@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Background music uses a browser-only Web Audio player managed by a React hook; this keeps single-player audio offline and honors saved settings and page visibility.
