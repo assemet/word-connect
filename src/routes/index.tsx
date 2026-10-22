@@ -211,7 +211,8 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
   const words = useMemo(() => [...data.words].sort((a, b) => a.length - b.length || a.localeCompare(b)), [data]);
   const found = progress.found[level] ?? [];
   const revealed = progress.revealed[level] ?? [];
-  const [letters, setLetters] = useState(() => shuffle(data.letters.split("")));
+  const [tiles, setTiles] = useState(() => data.letters.split("").map((ch, id) => ({ id, ch })));
+  const [shuffling, setShuffling] = useState(false);
   const [path, setPath] = useState<number[]>([]);
   const [flash, setFlash] = useState<{ text: string; kind: "ok" | "bad" | "dup" } | null>(null);
   const wheelRef = useRef<HTMLDivElement>(null);
@@ -219,14 +220,14 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
   const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null);
 
   const size = 240;
-  const r = letters.length > 5 ? 88 : 78;
-  const pos = letters.map((_, i) => {
-    const a = (i / letters.length) * Math.PI * 2 - Math.PI / 2;
+  const r = tiles.length > 5 ? 88 : 78;
+  const pos = tiles.map((_, i) => {
+    const a = (i / tiles.length) * Math.PI * 2 - Math.PI / 2;
     return { x: size / 2 + r * Math.cos(a), y: size / 2 + r * Math.sin(a) };
   });
 
   const P = (i: number) => pos[i] ?? { x: 0, y: 0 };
-  const current = path.map((i) => letters[i]).join("");
+  const current = path.map((i) => tiles[i]!.ch).join("");
 
   const idxAt = (cx: number, cy: number) => {
     const rect = wheelRef.current!.getBoundingClientRect();
@@ -267,6 +268,19 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
     submit(current);
     setPath([]);
   };
+
+  const shuffleTiles = () => {
+    setTiles((t) => shuffle(t));
+    setShuffling(true);
+    haptic("light", settings.vibration);
+    beep(600, settings.sound);
+  };
+  useEffect(() => {
+    if (!shuffling) return;
+    const t = setTimeout(() => setShuffling(false), 500);
+    return () => clearTimeout(t);
+  }, [shuffling]);
+
 
   const submit = (w: string) => {
     if (w.length < 2) return;
@@ -386,17 +400,17 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
             <button
               aria-label="Shuffle"
               onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => setLetters((l) => shuffle(l))}
+              onClick={shuffleTiles}
               className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full p-2 text-card/70"
             >
               <Shuffle className="h-7 w-7" />
             </button>
-            {letters.map((ch, i) => (
-              <span key={i}
-                className={`pointer-events-none absolute flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full font-display text-3xl font-bold shadow-md transition-colors ${
-                  path.includes(i) ? "bg-gold text-navy" : "bg-card text-navy"}`}
+            {tiles.map((t, i) => (
+              <span key={t.id}
+                className={`tile-motion pointer-events-none absolute flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full font-display text-3xl font-bold shadow-md transition-colors ${
+                  path.includes(i) ? "bg-gold text-navy" : "bg-card text-navy"} ${shuffling ? "animate-tumble" : ""}`}
                 style={{ left: P(i).x, top: P(i).y }}>
-                {ch}
+                {t.ch}
               </span>
             ))}
           </div>
