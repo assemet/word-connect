@@ -4,15 +4,7 @@ import {
   Play, HelpCircle, Settings as SettingsIcon, ChevronLeft, Lock, Star, Home, LayoutGrid,
   Shuffle, Lightbulb, Volume2, Music, Smartphone, Trash2, Coins, CheckCircle2, Sparkles,
 } from "lucide-react";
-import bg1 from "@/assets/bg.jpg";
-import bg2 from "@/assets/bg2.jpg";
-import bg3 from "@/assets/bg3.jpg";
-import bg4 from "@/assets/bg4.jpg";
-import bg5 from "@/assets/bg5.jpg";
-import bg6 from "@/assets/bg6.jpg";
-
-const BACKGROUNDS = [bg1, bg2, bg3, bg4, bg5, bg6];
-const backgroundForLevel = (n: number) => BACKGROUNDS[Math.min(Math.floor((n - 1) / 20), BACKGROUNDS.length - 1)]!;
+import { backgroundForLevel, backgroundLevel } from "@/lib/backgrounds";
 import { LEVELS } from "@/data/words";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useBackgroundMusic } from "@/hooks/useBackgroundMusic";
@@ -58,12 +50,13 @@ function App() {
   useEffect(() => initTelegram(), []);
 
   const totalStars = Object.values(progress.stars).reduce((a, b) => a + b, 0);
+  const background = backgroundForLevel(backgroundLevel(screen, level, progress.unlocked));
 
   const startLevel = (n: number) => { setLevel(n); setScreen("game"); };
 
   return (
     <div className="relative mx-auto flex h-[100dvh] max-w-md flex-col overflow-hidden">
-      <img src={screen === "game" || screen === "complete" ? backgroundForLevel(level) : bg1} alt="" width={768} height={1344} className="absolute inset-0 h-full w-full object-cover" />
+      <img key={background} src={background} alt="" width={768} height={1344} className="absolute inset-0 h-full w-full object-cover" />
       <div className="relative z-10 flex min-h-0 flex-1 flex-col">
         {screen === "home" && <HomeScreen go={setScreen} onPlay={() => startLevel(Math.min(progress.unlocked, LEVELS.length))} />}
         {screen === "levels" && <LevelsScreen progress={progress} totalStars={totalStars} back={() => setScreen("home")} onPick={startLevel} go={setScreen} />}
