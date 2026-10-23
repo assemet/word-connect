@@ -34,4 +34,9 @@ describe("Level backgrounds", () => {
     expect(backgroundForScreen("game", 2, 2)).not.toBe(backgroundForScreen("home", 1, 2));
     expect(backgroundForScreen("home", 1, 1)).toBe(bg1);
   });
+
+  it("gives levels 21-40 a gameplay picture distinct from the home screen", () => {
+    expect(backgroundForScreen("game", 21, 21)).not.toBe(backgroundForScreen("home", 1, 21));
+    expect(backgroundForScreen("home", 1, 21)).toBe(bg2);
+  });
 });
