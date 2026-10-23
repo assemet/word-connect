@@ -4,7 +4,7 @@ import {
   Play, HelpCircle, Settings as SettingsIcon, ChevronLeft, Lock, Star, Home, LayoutGrid,
   Shuffle, Lightbulb, Volume2, Music, Smartphone, Trash2, Coins, CheckCircle2, Sparkles,
 } from "lucide-react";
-import { backgroundForLevel, backgroundLevel } from "@/lib/backgrounds";
+import { backgroundForScreen } from "@/lib/backgrounds";
 import { LEVELS } from "@/data/words";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useBackgroundMusic } from "@/hooks/useBackgroundMusic";
@@ -50,7 +50,7 @@ function App() {
   useEffect(() => initTelegram(), []);
 
   const totalStars = Object.values(progress.stars).reduce((a, b) => a + b, 0);
-  const background = backgroundForLevel(backgroundLevel(screen, level, progress.unlocked));
+  const background = backgroundForScreen(screen, level, progress.unlocked);
 
   const startLevel = (n: number) => { setLevel(n); setScreen("game"); };
 
