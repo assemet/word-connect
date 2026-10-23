@@ -1,17 +1,32 @@
 import bg1 from "@/assets/bg.jpg";
+import bgGame1 from "@/assets/bg-game1.jpg";
 import bg2 from "@/assets/bg2.jpg";
 import bg3 from "@/assets/bg3.jpg";
 import bg4 from "@/assets/bg4.jpg";
 import bg5 from "@/assets/bg5.jpg";
 import bg6 from "@/assets/bg6.jpg";
 
-const backgrounds = [bg1, bg2, bg3, bg4, bg5, bg6];
+// Menus (home/levels/settings) follow unlocked progress with the original art.
+const menuBackgrounds = [bg1, bg2, bg3, bg4, bg5, bg6];
+// Gameplay has its own distinct set; world 1 (levels 1–20) differs from the menu art.
+const gameBackgrounds = [bgGame1, bg2, bg3, bg4, bg5, bg6];
+
+function worldIndex(level: number): number {
+  return Math.max(0, Math.min(Math.floor((level - 1) / 20), menuBackgrounds.length - 1));
+}
 
 export function backgroundForLevel(level: number): string {
-  const index = Math.max(0, Math.min(Math.floor((level - 1) / 20), backgrounds.length - 1));
-  return backgrounds[index] ?? bg1;
+  return menuBackgrounds[worldIndex(level)] ?? bg1;
+}
+
+export function gameBackgroundForLevel(level: number): string {
+  return gameBackgrounds[worldIndex(level)] ?? bgGame1;
 }
 
 export function backgroundLevel(screen: string, playingLevel: number, unlockedLevel: number): number {
   return screen === "game" || screen === "complete" ? playingLevel : unlockedLevel;
+}
+
+export function backgroundForScreen(screen: string, playingLevel: number, unlockedLevel: number): string {
+  return screen === "game" || screen === "complete" ? gameBackgroundForLevel(playingLevel) : backgroundForLevel(unlockedLevel);
 }
