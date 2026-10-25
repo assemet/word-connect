@@ -407,7 +407,7 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
                 const pts: { x: number; y: number }[] = [...path.map((i) => P(i)), ...(pointer && path.length ? [pointer] : [])];
                 if (pts.length < 2) return null;
                 // Catmull-Rom spline -> cubic Bezier for a smooth curvy line
-                let d = `M${pts[0].x},${pts[0].y}`;
+                let d = `M${pts[0]!.x},${pts[0]!.y}`;
                 for (let k = 0; k < pts.length - 1; k++) {
                   const p1 = pts[k]!, p2 = pts[k + 1]!, p0 = pts[k - 1] ?? p1, p3 = pts[k + 2] ?? p2;
                   const t = 0.2;
