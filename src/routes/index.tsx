@@ -404,16 +404,16 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
           >
             <svg className="pointer-events-none absolute inset-0 overflow-visible" width={size} height={size}>
               {(() => {
-                const pts = [...path.map((i) => P(i)), ...(pointer && path.length ? [pointer] : [])];
+                const pts: { x: number; y: number }[] = [...path.map((i) => P(i)), ...(pointer && path.length ? [pointer] : [])];
                 if (pts.length < 2) return null;
                 // Catmull-Rom spline -> cubic Bezier for a smooth curvy line
                 let d = `M${pts[0].x},${pts[0].y}`;
                 for (let k = 0; k < pts.length - 1; k++) {
-                  const p0 = pts[k - 1] ?? pts[k], p1 = pts[k], p2 = pts[k + 1], p3 = pts[k + 2] ?? p2;
+                  const p1 = pts[k]!, p2 = pts[k + 1]!, p0 = pts[k - 1] ?? p1, p3 = pts[k + 2] ?? p2;
                   const t = 0.2;
                   d += ` C${p1.x + (p2.x - p0.x) * t},${p1.y + (p2.y - p0.y) * t} ${p2.x - (p3.x - p1.x) * t},${p2.y - (p3.y - p1.y) * t} ${p2.x},${p2.y}`;
                 }
-                const tip = pts[pts.length - 1];
+                const tip = pts[pts.length - 1]!;
                 return (
                   <>
                     <path d={d} fill="none" stroke="var(--gold)" strokeWidth={18} strokeLinecap="round" strokeLinejoin="round" opacity={0.25} />
