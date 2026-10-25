@@ -10,6 +10,8 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useBackgroundMusic } from "@/hooks/useBackgroundMusic";
 import { initTelegram, haptic, beep } from "@/lib/telegram";
 import { scoreForWord, shuffle, HINT_COST, REVEAL_COST } from "@/lib/game";
+import { MEANING_COST } from "@/lib/dictionary";
+import { WordMeaning } from "@/components/WordMeaning";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -33,6 +35,7 @@ type Progress = {
   score: number;
   found: Record<number, string[]>;
   revealed: Record<number, string[]>; // "word:index"
+  meanings?: string[]; // words whose meaning was unlocked
 };
 type Settings = { sound: boolean; music: boolean; vibration: boolean };
 
@@ -208,6 +211,8 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
   const [shuffling, setShuffling] = useState(false);
   const [path, setPath] = useState<number[]>([]);
   const [flash, setFlash] = useState<{ text: string; kind: "ok" | "bad" | "dup" } | null>(null);
+  const [meaningWord, setMeaningWord] = useState<string | null>(null);
+  const [lang, setLang] = useLocalStorage<string>("wc-lang", "ar");
   const wheelRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
   const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null);
@@ -335,8 +340,19 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
     submit(target);
   };
 
+  const unlockMeaning = (w: string) => {
+    if (!spend(MEANING_COST)) return;
+    setProgress((p) => ({ ...p, coins: p.coins - MEANING_COST, meanings: [...(p.meanings ?? []), w] }));
+    beep(660, settings.sound);
+  };
+
   return (
     <>
+      {meaningWord && (
+        <WordMeaning word={meaningWord} unlocked={(progress.meanings ?? []).includes(meaningWord)}
+          coins={progress.coins} lang={lang} setLang={setLang}
+          onUnlock={() => unlockMeaning(meaningWord)} onClose={() => setMeaningWord(null)} />
+      )}
       <Header title={`Level ${level}`} back={back}>
         <Pill icon={<Star className="h-4 w-4 fill-gold text-gold" />} value={totalStars} />
         <Pill icon={<Coins className="h-4 w-4 text-gold" />} value={progress.coins} />
@@ -347,7 +363,9 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
           {words.map((w) => {
             const isFound = found.includes(w);
             return (
-              <div key={w} className="flex justify-center gap-1.5">
+              <div key={w} className={`flex justify-center gap-1.5 ${isFound ? "cursor-pointer" : ""}`}
+                role={isFound ? "button" : undefined} aria-label={isFound ? `Meaning of ${w}` : undefined}
+                onClick={isFound ? () => setMeaningWord(w) : undefined}>
                 {w.split("").map((ch, i) => {
                   const show = isFound || revealed.includes(`${w}:${i}`);
                   const cell = words.length > 6 ? "h-8 w-8 text-lg" : "h-11 w-11 text-2xl";
