@@ -28,8 +28,16 @@ export async function fetchMeaning(word: string): Promise<Meaning> {
 }
 
 export async function fetchTranslation(word: string, lang: string): Promise<string> {
-  const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word.toLowerCase())}&langpair=en|${lang}`);
+  const q = encodeURIComponent(word.toLowerCase());
+  try {
+    const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${lang}&dt=t&q=${q}`);
+    if (res.ok) {
+      const text = (await res.json())?.[0]?.[0]?.[0];
+      if (text) return text;
+    }
+  } catch { /* fall back below */ }
+  const res = await fetch(`https://api.mymemory.translated.net/get?q=${q}&langpair=en|${lang}`);
   if (!res.ok) return "";
   const json = await res.json();
-  return json?.responseData?.translatedText ?? "";
+  return String(json?.responseData?.translatedText ?? "").split("/")[0]!;
 }
