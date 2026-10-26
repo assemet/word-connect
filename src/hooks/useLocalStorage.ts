@@ -6,7 +6,11 @@ export function useLocalStorage<T>(key: string, initial: T) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(key);
-      if (raw) setValue({ ...initial, ...JSON.parse(raw) });
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const isObj = (v: unknown) => v !== null && typeof v === "object" && !Array.isArray(v);
+        setValue(isObj(initial) && isObj(parsed) ? { ...initial, ...parsed } : parsed);
+      }
     } catch {}
     setLoaded(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
