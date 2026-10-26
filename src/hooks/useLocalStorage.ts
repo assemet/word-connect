@@ -9,7 +9,9 @@ export function useLocalStorage<T>(key: string, initial: T) {
       if (raw) {
         const parsed = JSON.parse(raw);
         const isObj = (v: unknown) => v !== null && typeof v === "object" && !Array.isArray(v);
-        setValue(isObj(initial) && isObj(parsed) ? { ...initial, ...parsed } : parsed);
+        if (isObj(initial)) { if (isObj(parsed)) setValue({ ...initial, ...parsed }); }
+        else if (typeof parsed === typeof initial) setValue(parsed);
+        // otherwise ignore corrupted value and keep the default
       }
     } catch {}
     setLoaded(true);
