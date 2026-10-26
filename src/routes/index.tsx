@@ -212,6 +212,7 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
   const [path, setPath] = useState<number[]>([]);
   const [flash, setFlash] = useState<{ text: string; kind: "ok" | "bad" | "dup" } | null>(null);
   const [meaningWord, setMeaningWord] = useState<string | null>(null);
+  const [celebrating, setCelebrating] = useState(false);
   const [lang, setLang] = useLocalStorage<string>("wc-lang", "ar");
   const wheelRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -295,22 +296,23 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
     haptic("success", settings.vibration);
     beep(880, settings.sound);
     const done = newFound.length === words.length;
+    const hintsUsed = revealed.length;
+    const earned = hintsUsed === 0 ? 3 : hintsUsed <= 2 ? 2 : 1;
     setProgress((p) => {
       const next: Progress = { ...p, found: { ...p.found, [level]: newFound }, score: p.score + gain };
       if (done) {
-        const hintsUsed = (p.revealed[level] ?? []).length;
-        const stars = hintsUsed === 0 ? 3 : hintsUsed <= 2 ? 2 : 1;
-        next.stars = { ...p.stars, [level]: Math.max(stars, p.stars[level] ?? 0) };
+        next.stars = { ...p.stars, [level]: Math.max(earned, p.stars[level] ?? 0) };
         next.unlocked = Math.max(p.unlocked, level + 1);
         next.coins = p.coins + 20;
-        next.found = { ...next.found, [level]: [] };
-        next.revealed = { ...p.revealed, [level]: [] };
       }
       return next;
     });
     if (done) {
       const total = words.reduce((s, x) => s + scoreForWord(x), 0);
-      setTimeout(() => onComplete(total), 700);
+      setCelebrating(true);
+      haptic("success", settings.vibration);
+      [523, 659, 784, 1047].forEach((f, k) => setTimeout(() => beep(f, settings.sound), 150 + k * 140));
+      setTimeout(() => onComplete(total, earned), 2000);
     }
   };
 
