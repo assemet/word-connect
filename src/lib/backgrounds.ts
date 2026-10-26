@@ -13,7 +13,8 @@ const menuBackgrounds = [bg1, bg2, bg3, bg4, bg5, bg6];
 const gameBackgrounds = [bgGame1, bgGame2, bg3, bg4, bg5, bg6];
 
 function worldIndex(level: number): number {
-  return Math.max(0, Math.min(Math.floor((level - 1) / 20), menuBackgrounds.length - 1));
+  // Cycle the 6 pictures across all 50 worlds.
+  return Math.max(0, Math.floor((level - 1) / 20)) % menuBackgrounds.length;
 }
 
 export function backgroundForLevel(level: number): string {
