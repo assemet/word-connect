@@ -4,7 +4,8 @@ import {
   Play, HelpCircle, Settings as SettingsIcon, ChevronLeft, Lock, Star, Home, LayoutGrid,
   Shuffle, Lightbulb, Volume2, Music, Smartphone, Trash2, Coins, CheckCircle2, Sparkles,
 } from "lucide-react";
-import { backgroundForScreen } from "@/lib/backgrounds";
+import { backgroundForScreen, backgroundForLevel } from "@/lib/backgrounds";
+import { WORLD_COUNT, worldName, worldOf, worldRange } from "@/lib/worlds";
 import { LEVELS } from "@/data/words";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useBackgroundMusic } from "@/hooks/useBackgroundMusic";
@@ -48,21 +49,25 @@ function App() {
   const [progress, setProgress] = useLocalStorage<Progress>("wc-progress", initProgress);
   const [settings, setSettings, settingsLoaded] = useLocalStorage<Settings>("wc-settings", initSettings);
   const [lastGain, setLastGain] = useState(0);
+  const [lastStars, setLastStars] = useState(3);
+  const [world, setWorld] = useState<number | null>(null);
   useBackgroundMusic(settingsLoaded && settings.music);
 
   useEffect(() => initTelegram(), []);
 
   const totalStars = Object.values(progress.stars).reduce((a, b) => a + b, 0);
-  const background = backgroundForScreen(screen, level, progress.unlocked);
+  const background = screen === "levels" && world !== null
+    ? backgroundForLevel(world * 20 + 1)
+    : backgroundForScreen(screen, level, progress.unlocked);
 
-  const startLevel = (n: number) => { setLevel(n); setScreen("game"); };
+  const startLevel = (n: number) => { setLevel(n); setWorld(worldOf(n)); setScreen("game"); };
 
   return (
     <div className="relative mx-auto flex h-[100dvh] max-w-md flex-col overflow-hidden">
       <img key={background} src={background} alt="" width={768} height={1344} className="absolute inset-0 h-full w-full object-cover" />
       <div className="relative z-10 flex min-h-0 flex-1 flex-col">
-        {screen === "home" && <HomeScreen go={setScreen} onPlay={() => startLevel(Math.min(progress.unlocked, LEVELS.length))} />}
-        {screen === "levels" && <LevelsScreen progress={progress} totalStars={totalStars} back={() => setScreen("home")} onPick={startLevel} go={setScreen} />}
+        {screen === "home" && <HomeScreen go={(s) => { if (s === "levels") setWorld(null); setScreen(s); }} onPlay={() => startLevel(Math.min(progress.unlocked, LEVELS.length))} />}
+        {screen === "levels" && <LevelsScreen progress={progress} totalStars={totalStars} back={() => setScreen("home")} onPick={startLevel} go={setScreen} world={world} setWorld={setWorld} />}
         {screen === "game" && (
           <GameScreen
             key={level}
@@ -72,13 +77,18 @@ function App() {
             settings={settings}
             totalStars={totalStars}
             back={() => setScreen("levels")}
-            onComplete={(gain) => { setLastGain(gain); setScreen("complete"); }}
+            onComplete={(gain, stars) => {
+              setLastGain(gain); setLastStars(stars);
+              setProgress((p) => ({ ...p, found: { ...p.found, [level]: [] }, revealed: { ...p.revealed, [level]: [] } }));
+              setScreen("complete");
+            }}
           />
         )}
         {screen === "complete" && (
           <CompleteScreen
             level={level}
             gain={lastGain}
+            stars={lastStars}
             hasNext={level < LEVELS.length}
             onNext={() => startLevel(level + 1)}
             onHome={() => setScreen("home")}
@@ -158,30 +168,73 @@ function BottomNav({ active, go }: { active: Screen; go: (s: Screen) => void }) 
   );
 }
 
-function LevelsScreen({ progress, totalStars, back, onPick, go }: {
+function LevelsScreen({ progress, totalStars, back, onPick, go, world, setWorld }: {
   progress: Progress; totalStars: number; back: () => void; onPick: (n: number) => void; go: (s: Screen) => void;
+  world: number | null; setWorld: (w: number | null) => void;
 }) {
+  const currentWorld = worldOf(Math.min(progress.unlocked, LEVELS.length));
+  const currentRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => { currentRef.current?.scrollIntoView({ block: "center" }); }, [world]);
+
+  if (world === null) {
+    return (
+      <>
+        <Header title="Worlds" back={back}>
+          <Pill icon={<Star className="h-4 w-4 fill-gold text-gold" />} value={`${totalStars}/${LEVELS.length * 3}`} />
+        </Header>
+        <div className="flex-1 overflow-y-auto px-4 pb-6">
+          <div className="grid grid-cols-2 gap-3 py-2">
+            {Array.from({ length: WORLD_COUNT }, (_, w) => {
+              const [a, b] = worldRange(w);
+              const locked = a > progress.unlocked;
+              let stars = 0;
+              for (let n = a; n <= b; n++) stars += progress.stars[n] ?? 0;
+              return (
+                <button key={w} ref={w === currentWorld ? currentRef : undefined} disabled={locked} onClick={() => setWorld(w)}
+                  className={`relative h-32 overflow-hidden rounded-2xl border-4 text-left shadow-lg ${w === currentWorld ? "border-gold" : "border-card"} ${locked ? "grayscale" : ""}`}>
+                  <img src={backgroundForLevel(a)} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-navy/90 via-navy/30 to-transparent" />
+                  <div className="relative flex h-full flex-col justify-end p-2 text-primary-foreground">
+                    <span className="text-[10px] font-bold uppercase opacity-80">World {w + 1} · {a}–{b}</span>
+                    <span className="font-display text-base font-bold leading-tight">{worldName(w)}</span>
+                    <span className="mt-0.5 flex items-center gap-1 text-xs font-bold">
+                      {locked ? <><Lock className="h-3 w-3" /> Locked</> : <><Star className="h-3 w-3 fill-gold text-gold" />{stars}/60</>}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <BottomNav active="levels" go={go} />
+      </>
+    );
+  }
+
+  const [a, b] = worldRange(world);
   return (
     <>
-      <Header title="Levels" back={back}>
-        <Pill icon={<Star className="h-4 w-4 fill-gold text-gold" />} value={`${totalStars}/${LEVELS.length * 3}`} />
+      <Header title={`${world + 1}. ${worldName(world)}`} back={() => setWorld(null)}>
+        <Pill icon={<Star className="h-4 w-4 fill-gold text-gold" />} value={`${totalStars}`} />
       </Header>
       <div className="flex-1 overflow-y-auto px-6 pb-6">
         <div className="relative flex flex-col items-center gap-5 py-4">
-          {LEVELS.map((l, i) => {
+          {LEVELS.slice(a - 1, b).map((l, i) => {
             const locked = l.level > progress.unlocked;
             const stars = progress.stars[l.level] ?? 0;
             const offset = Math.sin(i * 1.1) * 80;
+            const isCurrent = l.level === progress.unlocked;
             return (
               <button
                 key={l.level}
+                ref={isCurrent ? currentRef : undefined}
                 disabled={locked}
                 onClick={() => onPick(l.level)}
                 style={{ transform: `translateX(${offset}px)` }}
                 className="flex flex-col items-center"
               >
-                <span className={`flex h-14 w-14 items-center justify-center rounded-full border-4 border-card font-display text-xl font-bold shadow-lg ${
-                  locked ? "bg-muted-foreground text-card" : l.level === progress.unlocked ? "tile animate-pulse" : "tile"}`}>
+                <span className={`flex h-14 w-14 items-center justify-center rounded-full border-4 border-card font-display text-lg font-bold shadow-lg ${
+                  locked ? "bg-muted-foreground text-card" : isCurrent ? "tile animate-pulse" : "tile"}`}>
                   {locked ? <Lock className="h-5 w-5" /> : l.level}
                 </span>
                 {!locked && (
@@ -201,11 +254,11 @@ function LevelsScreen({ progress, totalStars, back, onPick, go }: {
 
 function GameScreen({ level, progress, setProgress, settings, totalStars, back, onComplete }: {
   level: number; progress: Progress; setProgress: React.Dispatch<React.SetStateAction<Progress>>;
-  settings: Settings; totalStars: number; back: () => void; onComplete: (gain: number) => void;
+  settings: Settings; totalStars: number; back: () => void; onComplete: (gain: number, stars: number) => void;
 }) {
   const data = LEVELS[level - 1]!;
   const words = useMemo(() => [...data.words].sort((a, b) => a.length - b.length || a.localeCompare(b)), [data]);
-  const found = progress.found[level] ?? [];
+  const found = (progress.found[level] ?? []).filter((w) => words.includes(w));
   const revealed = progress.revealed[level] ?? [];
   const [tiles, setTiles] = useState(() => data.letters.split("").map((ch, id) => ({ id, ch })));
   const [shuffling, setShuffling] = useState(false);
@@ -355,7 +408,13 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
           coins={progress.coins} lang={lang} setLang={setLang}
           onUnlock={() => unlockMeaning(meaningWord)} onClose={() => setMeaningWord(null)} />
       )}
-      <Header title={`Level ${level}`} back={back}>
+      {celebrating && <Confetti />}
+      {celebrating && (
+        <div className="pointer-events-none absolute inset-x-0 top-1/3 z-40 flex justify-center">
+          <span className="title-logo animate-pop text-5xl">Amazing!</span>
+        </div>
+      )}
+      <Header title={<span>Level {level} <span className="text-sm opacity-80">· {worldName(worldOf(level))}</span></span>} back={back}>
         <Pill icon={<Star className="h-4 w-4 fill-gold text-gold" />} value={totalStars} />
         <Pill icon={<Coins className="h-4 w-4 text-gold" />} value={progress.coins} />
       </Header>
@@ -373,7 +432,7 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
                   const cell = words.length > 6 ? "h-8 w-8 text-lg" : "h-11 w-11 text-2xl";
                   return (
                     <span key={i} className={`flex items-center justify-center rounded-lg font-display font-bold ${cell} ${
-                      isFound ? "tile animate-pop" : show ? "bg-cream text-navy" : "bg-tile-empty"}`}
+                      isFound ? `tile animate-pop ${celebrating ? "victory-glow" : ""}` : show ? "bg-cream text-navy" : "bg-tile-empty"}`}
                       style={isFound ? { animationDelay: `${i * 50}ms` } : undefined}>
                       {show ? ch : ""}
                     </span>
@@ -460,16 +519,36 @@ function PowerBtn({ icon, cost, onClick, label }: { icon: React.ReactNode; cost:
   );
 }
 
-function CompleteScreen({ level, gain, hasNext, onNext, onHome }: { level: number; gain: number; hasNext: boolean; onNext: () => void; onHome: () => void }) {
+function Confetti() {
+  const pieces = useMemo(() => Array.from({ length: 60 }, (_, i) => ({
+    left: Math.random() * 100, delay: Math.random() * 0.8, dur: 1.8 + Math.random() * 1.4,
+    color: ["var(--gold)", "var(--primary)", "var(--destructive)", "var(--cream)", "var(--accent)"][i % 5],
+    size: 6 + Math.random() * 6, rot: Math.random() * 360,
+  })), []);
+  return (
+    <div className="pointer-events-none absolute inset-0 z-40 overflow-hidden" aria-hidden>
+      {pieces.map((p, i) => (
+        <span key={i} className="confetti-piece absolute top-0 rounded-sm"
+          style={{ left: `${p.left}%`, width: p.size, height: p.size * 1.6, background: p.color,
+            animationDelay: `${p.delay}s`, animationDuration: `${p.dur}s`, transform: `rotate(${p.rot}deg)` }} />
+      ))}
+    </div>
+  );
+}
+
+function CompleteScreen({ level, gain, stars, hasNext, onNext, onHome }: { level: number; gain: number; stars: number; hasNext: boolean; onNext: () => void; onHome: () => void }) {
   const words = LEVELS[level - 1]!.words.length;
   return (
-    <div className="flex flex-1 items-center justify-center bg-navy/50 p-6">
+    <div className="relative flex flex-1 items-center justify-center bg-navy/50 p-6">
+      <Confetti />
       <div className="animate-pop relative w-full max-w-xs rounded-3xl bg-cream p-6 pt-12 text-center shadow-2xl">
         <div className="absolute -top-9 left-1/2 flex -translate-x-1/2 items-end">
-          <Star className="h-14 w-14 fill-gold text-gold" />
-          <Star className="h-20 w-20 fill-gold text-gold" />
-          <Star className="h-14 w-14 fill-gold text-gold" />
+          {[1, 2, 3].map((s) => (
+            <Star key={s} className={`star-in ${s === 2 ? "h-20 w-20" : "h-14 w-14"} ${s <= stars ? "fill-gold text-gold" : "fill-muted text-muted-foreground"}`}
+              style={{ animationDelay: `${0.25 + s * 0.3}s` }} />
+          ))}
         </div>
+        <p className="font-display text-sm font-semibold text-muted-foreground">{worldName(worldOf(level))} · Level {level}</p>
         <h2 className="text-3xl font-bold text-navy">Level Complete!</h2>
         <div className="mt-4 space-y-2">
           <div className="rounded-xl bg-card p-3"><div className="text-sm text-muted-foreground">Words Found</div><div className="font-display text-2xl font-bold text-navy">{words}/{words}</div></div>
