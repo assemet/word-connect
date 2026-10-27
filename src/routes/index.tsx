@@ -183,25 +183,33 @@ function LevelsScreen({ progress, totalStars, back, onPick, go, world, setWorld 
           <Pill icon={<Star className="h-4 w-4 fill-gold text-gold" />} value={`${totalStars}/${LEVELS.length * 3}`} />
         </Header>
         <div className="flex-1 overflow-y-auto px-4 pb-6">
-          <div className="grid grid-cols-2 gap-3 py-2">
+          <div className="relative mx-auto flex max-w-sm flex-col-reverse items-center py-6">
+            <div className="absolute bottom-6 top-6 left-1/2 w-3 -translate-x-1/2 rounded-full bg-gold/40 border-2 border-gold/60" />
             {Array.from({ length: WORLD_COUNT }, (_, w) => {
               const [a, b] = worldRange(w);
               const locked = a > progress.unlocked;
+              const isCurrent = w === currentWorld;
               let stars = 0;
               for (let n = a; n <= b; n++) stars += progress.stars[n] ?? 0;
               return (
-                <button key={w} ref={w === currentWorld ? currentRef : undefined} disabled={locked} onClick={() => setWorld(w)}
-                  className={`relative h-32 overflow-hidden rounded-2xl border-4 text-left shadow-lg ${w === currentWorld ? "border-gold" : "border-card"} ${locked ? "grayscale" : ""}`}>
-                  <img src={backgroundForLevel(a)} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-navy/90 via-navy/30 to-transparent" />
-                  <div className="relative flex h-full flex-col justify-end p-2 text-primary-foreground">
-                    <span className="text-[10px] font-bold uppercase opacity-80">World {w + 1} · {a}–{b}</span>
-                    <span className="font-display text-base font-bold leading-tight">{worldName(w)}</span>
-                    <span className="mt-0.5 flex items-center gap-1 text-xs font-bold">
-                      {locked ? <><Lock className="h-3 w-3" /> Locked</> : <><Star className="h-3 w-3 fill-gold text-gold" />{stars}/60</>}
-                    </span>
-                  </div>
-                </button>
+                <div key={w} className="relative flex w-full flex-col items-center py-4">
+                  <span className={`relative z-10 mb-2 rounded-full border-2 px-3 py-0.5 font-display text-xs font-bold ${locked ? "border-card bg-navy text-primary-foreground/70" : "border-gold bg-navy text-gold"}`}>
+                    {locked ? <Lock className="inline h-3 w-3" /> : <Star className="inline h-3 w-3 fill-gold" />} Arena {w + 1}
+                  </span>
+                  <button ref={isCurrent ? currentRef : undefined} disabled={locked} onClick={() => setWorld(w)}
+                    className={`relative z-10 h-44 w-full overflow-hidden rounded-3xl border-4 text-left shadow-2xl transition-transform active:scale-95 ${isCurrent ? "border-gold victory-glow scale-105" : "border-card"} ${locked ? "grayscale opacity-80" : ""}`}>
+                    <img src={backgroundForLevel(a)} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-navy/90 via-navy/20 to-transparent" />
+                    {isCurrent && <span className="absolute right-2 top-2 rounded-full bg-gold px-2 py-0.5 font-display text-xs font-bold text-navy">YOU ARE HERE</span>}
+                    <div className="relative flex h-full flex-col items-center justify-end p-3 text-center text-primary-foreground">
+                      <span className="title-logo text-2xl leading-tight">{worldName(w)}</span>
+                      <span className="text-[11px] font-bold uppercase opacity-90">Levels {a}–{b}</span>
+                      <span className="mt-1 flex items-center gap-1 text-sm font-bold">
+                        {locked ? <><Lock className="h-4 w-4" /> Locked</> : <><Star className="h-4 w-4 fill-gold text-gold" />{stars}/60</>}
+                      </span>
+                    </div>
+                  </button>
+                </div>
               );
             })}
           </div>
