@@ -11,3 +11,4 @@
 
 - Background music uses a browser-only Web Audio player managed by a React hook; this keeps single-player audio offline and honors saved settings and page visibility.
 - Background selection is centralized in a browser-safe module; gameplay follows the played level and menus follow unlocked progress so returning to menus preserves the current world.
+- Worlds (names, 20-level ranges) live in a browser-safe worlds module; level data is generated offline into the words data file and guarded by tests for count, letter fit and no singular/plural pairs.
