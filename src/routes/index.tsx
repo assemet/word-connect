@@ -13,6 +13,7 @@ import { initTelegram, haptic, beep } from "@/lib/telegram";
 import { scoreForWord, shuffle, HINT_COST, REVEAL_COST } from "@/lib/game";
 import { MEANING_COST } from "@/lib/dictionary";
 import { WordMeaning } from "@/components/WordMeaning";
+import { fillJar, isBonusWord, JAR_SIZE, JAR_REWARD } from "@/lib/bonus";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -37,6 +38,8 @@ type Progress = {
   found: Record<number, string[]>;
   revealed: Record<number, string[]>; // "word:index"
   meanings?: string[]; // words whose meaning was unlocked
+  bonus?: Record<number, string[]>;
+  jar?: number;
 };
 type Settings = { sound: boolean; music: boolean; vibration: boolean };
 
@@ -273,6 +276,9 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
   const [path, setPath] = useState<number[]>([]);
   const [flash, setFlash] = useState<{ text: string; kind: "ok" | "bad" | "dup" } | null>(null);
   const [meaningWord, setMeaningWord] = useState<string | null>(null);
+  const bonusFound = progress.bonus?.[level] ?? [];
+  const [jarPulse, setJarPulse] = useState(0);
+  const [showJar, setShowJar] = useState(false);
   const [celebrating, setCelebrating] = useState(false);
   const [lang, setLang] = useLocalStorage<string>("wc-lang", "ar");
   const wheelRef = useRef<HTMLDivElement>(null);
@@ -346,6 +352,17 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
     if (w.length < 2) return;
     if (found.includes(w)) { setFlash({ text: w, kind: "dup" }); return; }
     if (!words.includes(w)) {
+      if (isBonusWord(w, data.letters, words)) {
+        if (bonusFound.includes(w)) { setFlash({ text: w, kind: "dup" }); return; }
+        const { jar, reward } = fillJar(progress.jar ?? 0);
+        setProgress((p) => ({ ...p, jar, coins: p.coins + reward, bonus: { ...(p.bonus ?? {}), [level]: [...(p.bonus?.[level] ?? []), w] } }));
+        setFlash({ text: reward ? `Jar full! +${reward} 🪙` : `Bonus! ${w}`, kind: "ok" });
+        setJarPulse((k) => k + 1);
+        haptic("success", settings.vibration);
+        beep(1046, settings.sound);
+        if (reward) [784, 988, 1175].forEach((f, k) => setTimeout(() => beep(f, settings.sound), 120 + k * 110));
+        return;
+      }
       setFlash({ text: w, kind: "bad" });
       haptic("error", settings.vibration);
       beep(180, settings.sound);
@@ -450,6 +467,23 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
             );
           })}
         </div>
+        <button key={jarPulse} type="button" aria-label="Bonus words jar" onClick={() => setShowJar((s) => !s)}
+          className={`glass mt-3 flex items-center gap-2 rounded-full px-4 py-1.5 font-display font-bold text-cream ${jarPulse ? "animate-pop" : ""}`}>
+          <span className="text-xl">🫙</span>
+          <span>Bonus</span>
+          <span className="flex gap-0.5">
+            {Array.from({ length: JAR_SIZE }, (_, i) => (
+              <span key={i} className={`h-2.5 w-2.5 rounded-full ${i < (progress.jar ?? 0) ? "bg-gold" : "bg-tile-empty"}`} />
+            ))}
+          </span>
+          <span className="text-xs opacity-80">→ {JAR_REWARD} 🪙</span>
+        </button>
+        {showJar && (
+          <div className="glass mt-2 max-w-xs rounded-2xl p-3 text-center font-display text-cream">
+            <p className="mb-1 text-sm opacity-80">Extra real words you found here (not in the puzzle):</p>
+            <p className="font-bold tracking-wider">{bonusFound.length ? bonusFound.join(" · ") : "None yet — keep trying!"}</p>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col items-center pb-6">
