@@ -467,6 +467,23 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
             );
           })}
         </div>
+        <button key={jarPulse} type="button" aria-label="Bonus words jar" onClick={() => setShowJar((s) => !s)}
+          className={`glass mt-3 flex items-center gap-2 rounded-full px-4 py-1.5 font-display font-bold text-cream ${jarPulse ? "animate-pop" : ""}`}>
+          <span className="text-xl">🫙</span>
+          <span>Bonus</span>
+          <span className="flex gap-0.5">
+            {Array.from({ length: JAR_SIZE }, (_, i) => (
+              <span key={i} className={`h-2.5 w-2.5 rounded-full ${i < (progress.jar ?? 0) ? "bg-gold" : "bg-tile-empty"}`} />
+            ))}
+          </span>
+          <span className="text-xs opacity-80">→ {JAR_REWARD} 🪙</span>
+        </button>
+        {showJar && (
+          <div className="glass mt-2 max-w-xs rounded-2xl p-3 text-center font-display text-cream">
+            <p className="mb-1 text-sm opacity-80">Extra real words you found here (not in the puzzle):</p>
+            <p className="font-bold tracking-wider">{bonusFound.length ? bonusFound.join(" · ") : "None yet — keep trying!"}</p>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col items-center pb-6">
