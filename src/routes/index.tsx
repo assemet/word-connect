@@ -481,6 +481,9 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
             );
           })}
         </div>
+        <div className="glass mt-3 rounded-full px-4 py-1 font-display text-sm font-bold text-cream" aria-label="World relics">
+          Relics {relicsGot}/{RELICS_PER_WORLD} · all → {RELIC_REWARD} 🪙
+        </div>
         <button key={jarPulse} type="button" aria-label="Bonus words jar" onClick={() => setShowJar((s) => !s)}
           className={`glass mt-3 flex items-center gap-2 rounded-full px-4 py-1.5 font-display font-bold text-cream ${jarPulse ? "animate-pop" : ""}`}>
           <span className="text-xl">🫙</span>
