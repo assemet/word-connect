@@ -484,21 +484,20 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
         <div className="glass mt-3 rounded-full px-4 py-1 font-display text-sm font-bold text-cream" aria-label="World relics">
           Relics {relicsGot}/{RELICS_PER_WORLD} · all → {RELIC_REWARD} 🪙
         </div>
-        <button key={jarPulse} type="button" aria-label="Bonus words jar" onClick={() => setShowJar((s) => !s)}
-          className={`glass mt-3 flex items-center gap-2 rounded-full px-4 py-1.5 font-display font-bold text-cream ${jarPulse ? "animate-pop" : ""}`}>
-          <span className="text-xl">🫙</span>
-          <span>Bonus</span>
-          <span className="flex gap-0.5">
-            {Array.from({ length: JAR_SIZE }, (_, i) => (
-              <span key={i} className={`h-2.5 w-2.5 rounded-full ${i < (progress.jar ?? 0) ? "bg-gold" : "bg-tile-empty"}`} />
-            ))}
-          </span>
-          <span className="text-xs opacity-80">→ {JAR_REWARD} 🪙</span>
-        </button>
         {showJar && (
-          <div className="glass mt-2 max-w-xs rounded-2xl p-3 text-center font-display text-cream">
-            <p className="mb-1 text-sm opacity-80">Extra real words you found here (not in the puzzle):</p>
-            <p className="font-bold tracking-wider">{bonusFound.length ? bonusFound.join(" · ") : "None yet — keep trying!"}</p>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 p-6" onClick={() => setShowJar(false)}>
+            <div className="glass w-full max-w-xs rounded-3xl p-5 text-center font-display text-cream" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-2xl font-bold">📖 Bonus Words</h3>
+              <p className="mt-1 text-sm opacity-80">Every {JAR_SIZE} bonus words → {JAR_REWARD} 🪙 ({progress.jar ?? 0}/{JAR_SIZE})</p>
+              <div className="mt-3 max-h-60 overflow-y-auto">
+                {bonusFound.length ? (
+                  <ul className="flex flex-wrap justify-center gap-2">
+                    {bonusFound.map((w) => <li key={w} className="rounded-lg bg-card px-3 py-1 font-bold tracking-wider text-navy">{w}</li>)}
+                  </ul>
+                ) : <p className="opacity-80">None yet — keep trying!</p>}
+              </div>
+              <button type="button" onClick={() => setShowJar(false)} className="mt-4 rounded-full bg-primary px-6 py-2 font-bold text-primary-foreground">Close</button>
+            </div>
           </div>
         )}
       </div>
@@ -515,7 +514,17 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
           )}
         </div>
         <div className="flex w-full items-end justify-between px-4">
-          <PowerBtn icon={<Lightbulb className="h-6 w-6 text-gold" />} cost={HINT_COST} onClick={hint} label="Hint" />
+          <div className="flex flex-col items-center gap-3">
+            <button key={jarPulse} type="button" aria-label="Bonus words" onClick={() => setShowJar(true)}
+              className={`relative flex flex-col items-center gap-1 ${jarPulse ? "animate-pop" : ""}`}>
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-navy/80 text-2xl shadow-lg">📖</span>
+              <span className="rounded-full bg-navy/80 px-2 text-xs font-bold text-primary-foreground">{progress.jar ?? 0}/{JAR_SIZE}</span>
+              {bonusFound.length > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-xs font-bold text-navy">{bonusFound.length}</span>
+              )}
+            </button>
+            <PowerBtn icon={<Lightbulb className="h-6 w-6 text-gold" />} cost={HINT_COST} onClick={hint} label="Hint" />
+          </div>
           <div
             ref={wheelRef}
             className="relative touch-none select-none rounded-full bg-wheel shadow-2xl"
