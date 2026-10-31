@@ -14,6 +14,7 @@ import { scoreForWord, shuffle, HINT_COST, REVEAL_COST } from "@/lib/game";
 import { MEANING_COST } from "@/lib/dictionary";
 import { WordMeaning } from "@/components/WordMeaning";
 import { fillJar, isBonusWord, JAR_SIZE, JAR_REWARD } from "@/lib/bonus";
+import { claimReward, relicLevels, treasureFor, RELICS_PER_WORLD, RELIC_REWARD } from "@/lib/treasures";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -39,6 +40,7 @@ type Progress = {
   revealed: Record<number, string[]>; // "word:index"
   meanings?: string[]; // words whose meaning was unlocked
   bonus?: Record<number, string[]>;
+  treasures?: number[];
   jar?: number;
 };
 type Settings = { sound: boolean; music: boolean; vibration: boolean };
@@ -277,6 +279,9 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
   const [flash, setFlash] = useState<{ text: string; kind: "ok" | "bad" | "dup" } | null>(null);
   const [meaningWord, setMeaningWord] = useState<string | null>(null);
   const bonusFound = progress.bonus?.[level] ?? [];
+  const treasure = useMemo(() => treasureFor(level, words), [level, words]);
+  const world = worldOf(level);
+  const relicsGot = relicLevels(world).filter((l) => (progress.treasures ?? []).includes(l)).length;
   const [jarPulse, setJarPulse] = useState(0);
   const [showJar, setShowJar] = useState(false);
   const [celebrating, setCelebrating] = useState(false);
@@ -370,7 +375,12 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
     }
     const newFound = [...found, w];
     const gain = scoreForWord(w);
-    setFlash({ text: `+${gain}`, kind: "ok" });
+    const claimed = progress.treasures ?? [];
+    const tReward = treasure && treasure.word === w && !claimed.includes(level) ? claimReward(level, treasure, claimed) : -1;
+    if (tReward >= 0 && treasure) {
+      setFlash({ text: treasure.kind === "gem" ? `${treasure.icon} +${tReward} 🪙` : tReward ? `All relics! +${tReward} 🪙` : `${treasure.icon} Relic found!`, kind: "ok" });
+      [988, 1319].forEach((f, k) => setTimeout(() => beep(f, settings.sound), 100 + k * 120));
+    } else setFlash({ text: `+${gain}`, kind: "ok" });
     haptic("success", settings.vibration);
     beep(880, settings.sound);
     const done = newFound.length === words.length;
@@ -378,10 +388,11 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
     const earned = hintsUsed === 0 ? 3 : hintsUsed <= 2 ? 2 : 1;
     setProgress((p) => {
       const next: Progress = { ...p, found: { ...p.found, [level]: newFound }, score: p.score + gain };
+      if (tReward >= 0) { next.treasures = [...(p.treasures ?? []), level]; next.coins = p.coins + tReward; }
       if (done) {
         next.stars = { ...p.stars, [level]: Math.max(earned, p.stars[level] ?? 0) };
         next.unlocked = Math.max(p.unlocked, level + 1);
-        next.coins = p.coins + 20;
+        next.coins = (next.coins ?? p.coins) + 20;
       }
       return next;
     });
@@ -455,17 +466,23 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
                 {w.split("").map((ch, i) => {
                   const show = isFound || revealed.includes(`${w}:${i}`);
                   const cell = words.length > 6 ? "h-8 w-8 text-lg" : "h-11 w-11 text-2xl";
+                  const hasItem = treasure && treasure.word === w && treasure.cell === i && !isFound && !(progress.treasures ?? []).includes(level);
                   return (
-                    <span key={i} className={`flex items-center justify-center rounded-lg font-display font-bold ${cell} ${
+                    <span key={i} className={`relative flex items-center justify-center rounded-lg font-display font-bold ${cell} ${
                       isFound ? `tile animate-pop ${celebrating ? "victory-glow" : ""}` : show ? "bg-cream text-navy" : "bg-tile-empty"}`}
                       style={isFound ? { animationDelay: `${i * 50}ms` } : undefined}>
                       {show ? ch : ""}
+                      {hasItem && <span aria-label={treasure.kind === "gem" ? "Hidden gem" : "Hidden relic"}
+                        className={`pointer-events-none absolute animate-pulse ${show ? "-right-1 -top-1 text-xs" : "text-base opacity-80"}`}>{treasure.icon}</span>}
                     </span>
                   );
                 })}
               </div>
             );
           })}
+        </div>
+        <div className="glass mt-3 rounded-full px-4 py-1 font-display text-sm font-bold text-cream" aria-label="World relics">
+          Relics {relicsGot}/{RELICS_PER_WORLD} · all → {RELIC_REWARD} 🪙
         </div>
         <button key={jarPulse} type="button" aria-label="Bonus words jar" onClick={() => setShowJar((s) => !s)}
           className={`glass mt-3 flex items-center gap-2 rounded-full px-4 py-1.5 font-display font-bold text-cream ${jarPulse ? "animate-pop" : ""}`}>
