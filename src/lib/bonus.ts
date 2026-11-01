@@ -1,12 +1,13 @@
 import { LEVELS } from "@/data/words";
+import { BONUS_WORDS } from "@/data/bonusWords";
 
 export const JAR_SIZE = 5;
 export const JAR_REWARD = 25;
 
-// Valid bonus words come from the game's own vetted, family-friendly word lists.
+// Valid bonus words: level words plus a broad list of common, family-friendly English words.
 let dict: Set<string> | null = null;
 function dictionary() {
-  if (!dict) dict = new Set(LEVELS.flatMap((l) => l.words));
+  if (!dict) dict = new Set([...LEVELS.flatMap((l) => l.words), ...BONUS_WORDS.split(" ")]);
   return dict;
 }
 
