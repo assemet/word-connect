@@ -14,4 +14,7 @@ describe("bonus words", () => {
     expect(isBonusWord("XYZ", "XYZ", [])).toBe(false);
     expect(isBonusWord("HOW", "OWT", [])).toBe(false);
   });
+  it("accepts common real words like ELBOW, BLOW, BOWL", () => {
+    for (const w of ["ELBOW", "BLOW", "BOWL", "LOB", "OWE"]) expect(isBonusWord(w, "LEWBO", [])).toBe(true);
+  });
 });
