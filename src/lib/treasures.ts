@@ -26,6 +26,11 @@ export function relicLevels(world: number): number[] {
   return RELIC_SLOTS.map((s) => (world - 1) * 20 + s);
 }
 
+/** Emoji id of each of the world's relics, in order. */
+export function relicIcons(world: number): string[] {
+  return RELIC_SLOTS.map((_, i) => RELIC_ICONS[(world * 3 + i) % RELIC_ICONS.length]!);
+}
+
 /** Coins earned for claiming the treasure on `level`, given levels already claimed. */
 export function claimReward(level: number, t: Treasure, claimed: number[]): number {
   if (claimed.includes(level)) return 0;
