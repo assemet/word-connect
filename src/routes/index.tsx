@@ -14,7 +14,8 @@ import { scoreForWord, shuffle, HINT_COST, REVEAL_COST } from "@/lib/game";
 import { MEANING_COST } from "@/lib/dictionary";
 import { WordMeaning } from "@/components/WordMeaning";
 import { fillJar, isBonusWord, JAR_SIZE, JAR_REWARD } from "@/lib/bonus";
-import { claimReward, relicLevels, treasureFor, RELICS_PER_WORLD, RELIC_REWARD } from "@/lib/treasures";
+import { claimReward, relicIcons, relicLevels, treasureFor, RELICS_PER_WORLD, RELIC_REWARD } from "@/lib/treasures";
+import { relicArt, RELIC_CHEST } from "@/lib/relicArt";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -284,6 +285,10 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
   const relicsGot = relicLevels(world).filter((l) => (progress.treasures ?? []).includes(l)).length;
   const [jarPulse, setJarPulse] = useState(0);
   const [showJar, setShowJar] = useState(false);
+  const [showRelics, setShowRelics] = useState(false);
+  const [relicPulse, setRelicPulse] = useState(0);
+  const [relicFly, setRelicFly] = useState<{ src: string; name: string; dx: number; dy: number } | null>(null);
+  const relicBtnRef = useRef<HTMLButtonElement>(null);
   const [celebrating, setCelebrating] = useState(false);
   const [lang, setLang] = useLocalStorage<string>("wc-lang", "ar");
   const wheelRef = useRef<HTMLDivElement>(null);
@@ -378,8 +383,17 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
     const claimed = progress.treasures ?? [];
     const tReward = treasure && treasure.word === w && !claimed.includes(level) ? claimReward(level, treasure, claimed) : -1;
     if (tReward >= 0 && treasure) {
-      setFlash({ text: treasure.kind === "gem" ? `${treasure.icon} +${tReward} 🪙` : tReward ? `All relics! +${tReward} 🪙` : `${treasure.icon} Relic found!`, kind: "ok" });
+      setFlash({ text: treasure.kind === "gem" ? `${treasure.icon} +${tReward} 🪙` : tReward ? `All relics! +${tReward} 🪙` : "Relic found!", kind: "ok" });
       [988, 1319].forEach((f, k) => setTimeout(() => beep(f, settings.sound), 100 + k * 120));
+      if (treasure.kind === "relic") {
+        const art = relicArt(treasure.icon);
+        const r = relicBtnRef.current?.getBoundingClientRect();
+        const dx = r ? r.left + r.width / 2 - window.innerWidth / 2 : 0;
+        const dy = r ? r.top + r.height / 2 - window.innerHeight / 2 : 0;
+        setRelicFly({ ...art, dx, dy });
+        [1568, 1760, 2093].forEach((f, k) => setTimeout(() => beep(f, settings.sound), 300 + k * 110));
+        setTimeout(() => { setRelicFly(null); setRelicPulse((n) => n + 1); beep(1319, settings.sound); }, 2300);
+      }
     } else setFlash({ text: `+${gain}`, kind: "ok" });
     haptic("success", settings.vibration);
     beep(880, settings.sound);
@@ -469,11 +483,11 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
                   const hasItem = treasure && treasure.word === w && treasure.cell === i && !isFound && !(progress.treasures ?? []).includes(level);
                   return (
                     <span key={i} className={`relative flex items-center justify-center rounded-lg font-display font-bold ${cell} ${
-                      isFound ? `tile animate-pop ${celebrating ? "victory-glow" : ""}` : show ? "bg-cream text-navy" : "bg-tile-empty"}`}
+                      isFound ? `tile animate-pop ${celebrating ? "victory-glow" : ""}` : hasItem ? "mystery-tile text-navy" : show ? "bg-cream text-navy" : "bg-tile-empty"}`}
                       style={isFound ? { animationDelay: `${i * 50}ms` } : undefined}>
                       {show ? ch : ""}
                       {hasItem && <span aria-label={treasure.kind === "gem" ? "Hidden gem" : "Hidden relic"}
-                        className={`pointer-events-none absolute animate-pulse ${show ? "-right-1 -top-1 text-xs" : "text-base opacity-80"}`}>{treasure.icon}</span>}
+                        className={`pointer-events-none absolute ${show ? "-right-1 -top-1 text-xs" : "text-sm opacity-90"}`}>✨</span>}
                     </span>
                   );
                 })}
@@ -481,9 +495,40 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
             );
           })}
         </div>
-        <div className="glass mt-3 rounded-full px-4 py-1 font-display text-sm font-bold text-cream" aria-label="World relics">
-          Relics {relicsGot}/{RELICS_PER_WORLD} · all → {RELIC_REWARD} 🪙
-        </div>
+        {showRelics && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 p-6" onClick={() => setShowRelics(false)}>
+            <div className="glass w-full max-w-xs rounded-3xl p-5 text-center font-display text-cream" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-2xl font-bold">World Relics</h3>
+              <p className="mt-1 text-sm opacity-80">{worldName(world)} · find all {RELICS_PER_WORLD} → {RELIC_REWARD} 🪙</p>
+              <div className="mt-4 flex justify-center gap-3">
+                {relicIcons(world).map((ic, k) => {
+                  const lv = relicLevels(world)[k]!;
+                  const got = (progress.treasures ?? []).includes(lv);
+                  const art = relicArt(ic);
+                  return (
+                    <div key={ic + k} className="flex w-20 flex-col items-center gap-1">
+                      <div className={`flex h-20 w-20 items-center justify-center rounded-2xl ${got ? "bg-gold/30 victory-glow" : "bg-navy/50"}`}>
+                        <img src={art.src} alt={got ? art.name : "Undiscovered relic"} width={64} height={64}
+                          className={`h-16 w-16 object-contain ${got ? "" : "brightness-0 opacity-40"}`} />
+                      </div>
+                      <span className="text-[11px] leading-tight opacity-90">{got ? art.name : `Level ${lv}`}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <button type="button" onClick={() => setShowRelics(false)} className="mt-4 rounded-full bg-primary px-6 py-2 font-bold text-primary-foreground">Close</button>
+            </div>
+          </div>
+        )}
+        {relicFly && (
+          <div className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center">
+            <div className="relic-fly flex flex-col items-center" style={{ "--dx": `${relicFly.dx}px`, "--dy": `${relicFly.dy}px` } as React.CSSProperties}>
+              <div className="relic-rays absolute h-72 w-72 rounded-full" />
+              <img src={relicFly.src} alt={relicFly.name} width={192} height={192} className="relative h-48 w-48 object-contain drop-shadow-2xl" />
+              <span className="title-logo relative mt-1 text-2xl">{relicFly.name}</span>
+            </div>
+          </div>
+        )}
         {showJar && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 p-6" onClick={() => setShowJar(false)}>
             <div className="glass w-full max-w-xs rounded-3xl p-5 text-center font-display text-cream" onClick={(e) => e.stopPropagation()}>
@@ -569,7 +614,16 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
               </span>
             ))}
           </div>
-          <PowerBtn icon={<Sparkles className="h-6 w-6 text-gold" />} cost={REVEAL_COST} onClick={revealWord} label="Reveal word" />
+          <div className="flex flex-col items-center gap-3">
+            <button ref={relicBtnRef} key={`r${relicPulse}`} type="button" aria-label="World relics" onClick={() => setShowRelics(true)}
+              className={`relative flex flex-col items-center gap-1 ${relicPulse ? "animate-pop" : ""}`}>
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-navy/80 shadow-lg">
+                <img src={RELIC_CHEST} alt="" width={40} height={40} className="h-10 w-10 object-contain" />
+              </span>
+              <span className="rounded-full bg-navy/80 px-2 text-xs font-bold text-primary-foreground">{relicsGot}/{RELICS_PER_WORLD}</span>
+            </button>
+            <PowerBtn icon={<Sparkles className="h-6 w-6 text-gold" />} cost={REVEAL_COST} onClick={revealWord} label="Reveal word" />
+          </div>
         </div>
       </div>
     </>
