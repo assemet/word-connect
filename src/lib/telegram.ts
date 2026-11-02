@@ -63,7 +63,7 @@ export function sfx(name: keyof typeof SFX | string, enabled: boolean) {
   try {
     ctx ??= new AudioContext();
     const now = ctx.currentTime;
-    const seq = SFX[name] ?? SFX.word!;
+    const seq = SFX[name] ?? SFX["word"]!;
     seq.forEach(([f, t], i) => chime(f, now + t, name === "victory" && i === seq.length - 1 ? 1.4 : 0.55));
     if (name === "victory") [523, 659, 784].forEach((f) => chime(f / 2, now + 1.15, 1.6, 0.04));
   } catch {}
