@@ -9,9 +9,11 @@ import { WORLD_COUNT, worldName, worldOf, worldRange } from "@/lib/worlds";
 import { LEVELS } from "@/data/words";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useBackgroundMusic } from "@/hooks/useBackgroundMusic";
-import { initTelegram, haptic, beep } from "@/lib/telegram";
+import { initTelegram, haptic, beep, sfx } from "@/lib/telegram";
+import gemImg from "@/assets/relics/gem.png";
 import { scoreForWord, shuffle, HINT_COST, REVEAL_COST } from "@/lib/game";
-import { MEANING_COST } from "@/lib/dictionary";
+import { MEANING_COST, fetchMeaning } from "@/lib/dictionary";
+const CLUE_COST = 30;
 import { WordMeaning } from "@/components/WordMeaning";
 import { fillJar, isBonusWord, JAR_SIZE, JAR_REWARD } from "@/lib/bonus";
 import { claimReward, relicIcons, relicLevels, treasureFor, RELICS_PER_WORLD, RELIC_REWARD } from "@/lib/treasures";
@@ -289,6 +291,17 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
   const [relicPulse, setRelicPulse] = useState(0);
   const [relicFly, setRelicFly] = useState<{ src: string; name: string; dx: number; dy: number } | null>(null);
   const relicBtnRef = useRef<HTMLButtonElement>(null);
+  const coinRef = useRef<HTMLSpanElement>(null);
+  const [coinPulse, setCoinPulse] = useState(0);
+  const [notes, setNotes] = useState<{ id: number; x: number; y: number } | null>(null);
+  const [clue, setClue] = useState<{ word: string; text: string } | null>(null);
+  const [clueLoading, setClueLoading] = useState(false);
+  const burst = (el?: Element | null) => {
+    if (!settings.sound) return;
+    const r = el?.getBoundingClientRect() ?? wheelRef.current?.getBoundingClientRect();
+    if (!r) return;
+    setNotes({ id: Date.now(), x: r.left + r.width / 2, y: r.top + r.height / 2 });
+  };
   const [celebrating, setCelebrating] = useState(false);
   const [lang, setLang] = useLocalStorage<string>("wc-lang", "ar");
   const wheelRef = useRef<HTMLDivElement>(null);
@@ -369,8 +382,8 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
         setFlash({ text: reward ? `Jar full! +${reward} 🪙` : `Bonus! ${w}`, kind: "ok" });
         setJarPulse((k) => k + 1);
         haptic("success", settings.vibration);
-        beep(1046, settings.sound);
-        if (reward) [784, 988, 1175].forEach((f, k) => setTimeout(() => beep(f, settings.sound), 120 + k * 110));
+        sfx(reward ? "gem" : "bonus", settings.sound);
+        burst();
         return;
       }
       setFlash({ text: w, kind: "bad" });
@@ -384,19 +397,26 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
     const tReward = treasure && treasure.word === w && !claimed.includes(level) ? claimReward(level, treasure, claimed) : -1;
     if (tReward >= 0 && treasure) {
       setFlash({ text: treasure.kind === "gem" ? `${treasure.icon} +${tReward} 🪙` : tReward ? `All relics! +${tReward} 🪙` : "Relic found!", kind: "ok" });
-      [988, 1319].forEach((f, k) => setTimeout(() => beep(f, settings.sound), 100 + k * 120));
+      if (treasure.kind === "gem") {
+        const r = coinRef.current?.getBoundingClientRect();
+        const dx = r ? r.left + r.width / 2 - window.innerWidth / 2 : 0;
+        const dy = r ? r.top + r.height / 2 - window.innerHeight / 2 : 0;
+        setRelicFly({ src: gemImg, name: `+${tReward} Coins`, dx, dy });
+        sfx("gem", settings.sound);
+        setTimeout(() => { setRelicFly(null); setCoinPulse((n) => n + 1); sfx("word", settings.sound); burst(coinRef.current); }, 2300);
+      }
       if (treasure.kind === "relic") {
         const art = relicArt(treasure.icon);
         const r = relicBtnRef.current?.getBoundingClientRect();
         const dx = r ? r.left + r.width / 2 - window.innerWidth / 2 : 0;
         const dy = r ? r.top + r.height / 2 - window.innerHeight / 2 : 0;
         setRelicFly({ ...art, dx, dy });
-        [1568, 1760, 2093].forEach((f, k) => setTimeout(() => beep(f, settings.sound), 300 + k * 110));
-        setTimeout(() => { setRelicFly(null); setRelicPulse((n) => n + 1); beep(1319, settings.sound); }, 2300);
+        sfx("relic", settings.sound);
+        setTimeout(() => { setRelicFly(null); setRelicPulse((n) => n + 1); sfx("word", settings.sound); burst(relicBtnRef.current); }, 2300);
       }
     } else setFlash({ text: `+${gain}`, kind: "ok" });
     haptic("success", settings.vibration);
-    beep(880, settings.sound);
+    if (tReward < 0) { sfx("word", settings.sound); burst(); }
     const done = newFound.length === words.length;
     const hintsUsed = revealed.length;
     const earned = hintsUsed === 0 ? 3 : hintsUsed <= 2 ? 2 : 1;
@@ -414,8 +434,9 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
       const total = words.reduce((s, x) => s + scoreForWord(x), 0);
       setCelebrating(true);
       haptic("success", settings.vibration);
-      [523, 659, 784, 1047].forEach((f, k) => setTimeout(() => beep(f, settings.sound), 150 + k * 140));
-      setTimeout(() => onComplete(total, earned), 2000);
+      setTimeout(() => { sfx("victory", settings.sound); burst(); }, 200);
+      setTimeout(() => burst(), 900);
+      setTimeout(() => onComplete(total, earned), 2600);
     }
   };
 
@@ -435,7 +456,24 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
     if (!target) return;
     const i = target.split("").findIndex((_, i) => !revealed.includes(`${target}:${i}`));
     setProgress((p) => ({ ...p, coins: p.coins - HINT_COST, revealed: { ...p.revealed, [level]: [...revealed, `${target}:${i}`] } }));
-    beep(660, settings.sound);
+    sfx("hint", settings.sound);
+  };
+  const showClue = async () => {
+    const target = words.find((w) => !found.includes(w));
+    if (!target || clueLoading) return;
+    if (clue?.word === target) { setClue({ ...clue }); return; }
+    if (!spend(CLUE_COST)) return;
+    setProgress((p) => ({ ...p, coins: p.coins - CLUE_COST }));
+    sfx("hint", settings.sound);
+    setClueLoading(true);
+    const base = `${target.length} letters · starts with "${target[0]}"`;
+    let text = base;
+    try {
+      const m = await fetchMeaning(target);
+      if (m.definition) text = `${m.partOfSpeech ? `(${m.partOfSpeech}) ` : ""}${m.definition.replace(new RegExp(target, "gi"), "___")}\n${base}`;
+    } catch {}
+    setClueLoading(false);
+    setClue({ word: target, text });
   };
   const revealWord = () => {
     if (!spend(REVEAL_COST)) return;
@@ -466,8 +504,21 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
       )}
       <Header title={<span>Level {level} <span className="text-sm opacity-80">· {worldName(worldOf(level))}</span></span>} back={back}>
         <Pill icon={<Star className="h-4 w-4 fill-gold text-gold" />} value={totalStars} />
-        <Pill icon={<Coins className="h-4 w-4 text-gold" />} value={progress.coins} />
+        <span ref={coinRef} key={`c${coinPulse}`} className={coinPulse ? "coin-bump" : ""}>
+          <Pill icon={<Coins className="h-4 w-4 text-gold" />} value={progress.coins} />
+        </span>
       </Header>
+      {notes && <SoundNotes key={notes.id} x={notes.x} y={notes.y} />}
+      {clue && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 p-6" onClick={() => setClue(null)}>
+          <div className="glass animate-pop w-full max-w-xs rounded-3xl p-5 text-center font-display text-cream" onClick={(e) => e.stopPropagation()}>
+            <div className="text-4xl">🔍</div>
+            <h3 className="mt-1 text-2xl font-bold">Word Clue</h3>
+            <p className="mt-3 whitespace-pre-line text-base leading-snug">{clue.text}</p>
+            <button type="button" onClick={() => setClue(null)} className="mt-4 rounded-full bg-primary px-6 py-2 font-bold text-primary-foreground">Got it</button>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-1 flex-col items-center justify-start overflow-y-auto px-4">
         <div className="glass flex flex-col gap-1.5 rounded-2xl p-3">
@@ -615,6 +666,7 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
             ))}
           </div>
           <div className="flex flex-col items-center gap-3">
+            <PowerBtn icon={clueLoading ? <span className="animate-spin text-xl">⏳</span> : <span className="text-2xl">🔍</span>} cost={CLUE_COST} onClick={showClue} label="Word clue" />
             <button ref={relicBtnRef} key={`r${relicPulse}`} type="button" aria-label="World relics" onClick={() => setShowRelics(true)}
               className={`relative flex flex-col items-center gap-1 ${relicPulse ? "animate-pop" : ""}`}>
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-navy/80 shadow-lg">
@@ -638,6 +690,21 @@ function PowerBtn({ icon, cost, onClick, label }: { icon: React.ReactNode; cost:
         <Coins className="h-3 w-3 text-gold" />{cost}
       </span>
     </button>
+  );
+}
+
+function SoundNotes({ x, y }: { x: number; y: number }) {
+  const items = useMemo(() => Array.from({ length: 6 }, (_, i) => ({
+    ch: ["♪", "♫", "♬", "♩"][i % 4], nx: (Math.random() - 0.5) * 140, nr: (Math.random() - 0.5) * 60, d: i * 0.08,
+  })), []);
+  return (
+    <div className="pointer-events-none fixed z-[70]" style={{ left: x, top: y }} aria-hidden>
+      <span className="sound-ring absolute -left-8 -top-8 h-16 w-16 rounded-full" />
+      {items.map((n, i) => (
+        <span key={i} className="sound-note absolute -left-2 -top-3 text-2xl text-gold drop-shadow"
+          style={{ "--nx": `${n.nx}px`, "--nr": `${n.nr}deg`, animationDelay: `${n.d}s` } as React.CSSProperties}>{n.ch}</span>
+      ))}
+    </div>
   );
 }
 
