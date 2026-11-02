@@ -161,3 +161,17 @@
   65% { opacity: 1; transform: scale(1) rotate(120deg); }
   100% { opacity: 0; transform: scale(0.2) rotate(180deg); }
 }
+
+.sound-note { animation: sound-note 1.4s ease-out forwards; }
+@keyframes sound-note {
+  0% { transform: translate(0, 0) scale(0.4) rotate(0); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(var(--nx), -140px) scale(1.2) rotate(var(--nr)); opacity: 0; }
+}
+.sound-ring { animation: sound-ring 0.9s ease-out forwards; border: 3px solid var(--gold); }
+@keyframes sound-ring {
+  0% { transform: scale(0.3); opacity: 0.9; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+.coin-bump { animation: coin-bump 0.6s ease-out; }
+@keyframes coin-bump { 0%,100% { transform: scale(1); } 40% { transform: scale(1.35); filter: drop-shadow(0 0 8px var(--gold)); } }
