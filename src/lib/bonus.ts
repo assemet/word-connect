@@ -2,7 +2,7 @@ import { LEVELS } from "@/data/words";
 import { BONUS_WORDS } from "@/data/bonusWords";
 
 export const JAR_SIZE = 5;
-export const JAR_REWARD = 25;
+export const JAR_REWARD = 15;
 
 // Valid bonus words: level words plus a broad list of common, family-friendly English words.
 let dict: Set<string> | null = null;

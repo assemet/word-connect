@@ -1,6 +1,6 @@
 // Hidden items: gems (instant coins) and world relics (collect 3 per world for a big reward).
-export const GEM_REWARD = 15;
-export const RELIC_REWARD = 100;
+export const GEM_REWARD = 10;
+export const RELIC_REWARD = 50;
 export const RELICS_PER_WORLD = 3;
 const RELIC_SLOTS = [7, 14, 20]; // position of the level inside its 20-level world
 const RELIC_ICONS = ["🏺", "👑", "🔮", "🗝️", "🐚", "🦋", "🧭", "💍", "📜", "🪶"];
