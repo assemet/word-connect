@@ -455,7 +455,7 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
       if (done) {
         next.stars = { ...p.stars, [level]: Math.max(earned, p.stars[level] ?? 0) };
         next.unlocked = Math.max(p.unlocked, level + 1);
-        next.coins = (next.coins ?? p.coins) + 20;
+        next.coins = (next.coins ?? p.coins) + LEVEL_REWARD;
       }
       return next;
     });
