@@ -23,7 +23,7 @@ export function WordMeaning({ word, unlocked, coins, lang, setLang, onUnlock, on
   }, [word, lang, unlocked]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 p-6" onClick={onClose}>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-navy/60 p-6" onClick={onClose}>
       <div className="animate-pop relative w-full max-w-xs rounded-3xl bg-cream p-5 text-navy shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <button onClick={onClose} aria-label="Close" className="absolute right-3 top-3 rounded-full p-1 hover:bg-card"><X className="h-5 w-5" /></button>
         <div className="flex items-center gap-2"><BookOpen className="h-5 w-5 text-primary" /><h2 className="font-display text-3xl font-bold tracking-widest">{word}</h2></div>

@@ -628,6 +628,7 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
             <span className={`rounded-xl px-4 py-1.5 font-display text-2xl font-bold tracking-widest ${
               flash?.kind === "bad" ? "animate-shake bg-destructive text-destructive-foreground"
               : flash?.kind === "ok" ? "animate-pop bg-primary text-primary-foreground"
+              : flash?.kind === "dup" ? "animate-shake bg-gold text-navy dup-glow"
               : "bg-card text-navy"}`}>
               {current || flash?.text}
             </span>
