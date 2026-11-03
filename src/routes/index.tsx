@@ -58,6 +58,7 @@ function App() {
   const [settings, setSettings, settingsLoaded] = useLocalStorage<Settings>("wc-settings", initSettings);
   const [lastGain, setLastGain] = useState(0);
   const [lastStars, setLastStars] = useState(3);
+  const [peek, setPeek] = useState(false);
   const [world, setWorld] = useState<number | null>(null);
   useBackgroundMusic(settingsLoaded && settings.music);
 
@@ -66,9 +67,12 @@ function App() {
   const totalStars = Object.values(progress.stars).reduce((a, b) => a + b, 0);
   const background = screen === "levels" && world !== null
     ? backgroundForLevel(world * 20 + 1)
-    : backgroundForScreen(screen, level, progress.unlocked);
+    : backgroundForScreen(screen === "complete" ? "game" : screen, level, progress.unlocked);
 
-  const startLevel = (n: number) => { setLevel(n); setWorld(worldOf(n)); setScreen("game"); };
+  const startLevel = (n: number) => { setLevel(n); setWorld(worldOf(n)); setScreen("game"); setPeek(false); };
+  const clearBoard = (n: number) =>
+    setProgress((p) => ({ ...p, found: { ...p.found, [n]: [] }, revealed: { ...p.revealed, [n]: [] } }));
+  const finishTo = (next: () => void) => { clearBoard(level); setPeek(false); next(); };
 
   return (
     <div className="relative mx-auto flex h-[100dvh] max-w-md flex-col overflow-hidden">
@@ -76,7 +80,7 @@ function App() {
       <div className="relative z-10 flex min-h-0 flex-1 flex-col">
         {screen === "home" && <HomeScreen go={(s) => { if (s === "levels") setWorld(null); setScreen(s); }} onPlay={() => startLevel(Math.min(progress.unlocked, LEVELS.length))} />}
         {screen === "levels" && <LevelsScreen progress={progress} totalStars={totalStars} back={() => setScreen("home")} onPick={startLevel} go={setScreen} world={world} setWorld={setWorld} />}
-        {screen === "game" && (
+        {(screen === "game" || screen === "complete") && (
           <GameScreen
             key={level}
             level={level}
@@ -84,23 +88,35 @@ function App() {
             setProgress={setProgress}
             settings={settings}
             totalStars={totalStars}
-            back={() => setScreen("levels")}
+            back={() => (screen === "complete" ? finishTo(() => setScreen("levels")) : setScreen("levels"))}
             onComplete={(gain, stars) => {
               setLastGain(gain); setLastStars(stars);
-              setProgress((p) => ({ ...p, found: { ...p.found, [level]: [] }, revealed: { ...p.revealed, [level]: [] } }));
               setScreen("complete");
             }}
           />
         )}
-        {screen === "complete" && (
-          <CompleteScreen
-            level={level}
-            gain={lastGain}
-            stars={lastStars}
-            hasNext={level < LEVELS.length}
-            onNext={() => startLevel(level + 1)}
-            onHome={() => setScreen("home")}
-          />
+        {screen === "complete" && !peek && (
+          <div className="absolute inset-0 z-[45] flex">
+            <CompleteScreen
+              level={level}
+              gain={lastGain}
+              stars={lastStars}
+              hasNext={level < LEVELS.length}
+              onNext={() => finishTo(() => startLevel(level + 1))}
+              onHome={() => finishTo(() => setScreen("home"))}
+              onPeek={() => setPeek(true)}
+            />
+          </div>
+        )}
+        {screen === "complete" && peek && (
+          <div className="animate-pop absolute inset-x-3 bottom-3 z-[45] flex items-center gap-2 rounded-2xl bg-cream/95 p-2 shadow-2xl">
+            <button onClick={() => setPeek(false)} className="flex items-center gap-1 rounded-full bg-card px-4 py-2 font-semibold text-navy shadow">🏆 Result</button>
+            {level < LEVELS.length ? (
+              <button onClick={() => finishTo(() => startLevel(level + 1))} className="btn-game flex flex-1 items-center justify-center gap-2 py-2"><Play className="h-4 w-4 fill-current" />Next Level</button>
+            ) : (
+              <button onClick={() => finishTo(() => setScreen("home"))} className="btn-game flex-1 py-2">Home</button>
+            )}
+          </div>
         )}
         {screen === "settings" && (
           <SettingsScreen settings={settings} setSettings={setSettings} back={() => setScreen("home")} go={setScreen}
@@ -750,7 +766,7 @@ function Confetti() {
   );
 }
 
-function CompleteScreen({ level, gain, stars, hasNext, onNext, onHome }: { level: number; gain: number; stars: number; hasNext: boolean; onNext: () => void; onHome: () => void }) {
+function CompleteScreen({ level, gain, stars, hasNext, onNext, onHome, onPeek }: { level: number; gain: number; stars: number; hasNext: boolean; onNext: () => void; onHome: () => void; onPeek: () => void }) {
   const words = LEVELS[level - 1]!.words.length;
   return (
     <div className="relative flex flex-1 items-center justify-center bg-navy/50 p-6">
@@ -772,7 +788,10 @@ function CompleteScreen({ level, gain, stars, hasNext, onNext, onHome }: { level
           {hasNext ? (
             <button onClick={onNext} className="btn-game flex w-full items-center justify-center gap-2 py-3 text-lg"><Play className="h-5 w-5 fill-current" />Next Level</button>
           ) : <p className="font-display font-semibold text-navy">You finished every level! 🎉</p>}
-          <button onClick={onHome} className="flex items-center gap-2 rounded-full bg-card px-6 py-2 font-semibold text-navy shadow"><Home className="h-4 w-4" />Home</button>
+          <div className="flex gap-2">
+            <button onClick={onPeek} className="flex items-center gap-2 rounded-full bg-card px-5 py-2 font-semibold text-navy shadow">👁️ View Words</button>
+            <button onClick={onHome} className="flex items-center gap-2 rounded-full bg-card px-5 py-2 font-semibold text-navy shadow"><Home className="h-4 w-4" />Home</button>
+          </div>
         </div>
       </div>
     </div>
