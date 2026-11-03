@@ -287,6 +287,13 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
   const relicsGot = relicLevels(world).filter((l) => (progress.treasures ?? []).includes(l)).length;
   const [jarPulse, setJarPulse] = useState(0);
   const [showJar, setShowJar] = useState(false);
+  const [dupWord, setDupWord] = useState<string | null>(null);
+  const [dupKey, setDupKey] = useState(0);
+  useEffect(() => {
+    if (!dupWord) return;
+    const t = setTimeout(() => setDupWord(null), 1200);
+    return () => clearTimeout(t);
+  }, [dupWord, dupKey]);
   const [showRelics, setShowRelics] = useState(false);
   const [relicPulse, setRelicPulse] = useState(0);
   const [relicFly, setRelicFly] = useState<{ src: string; name: string; dx: number; dy: number } | null>(null);
@@ -373,10 +380,16 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
 
   const submit = (w: string) => {
     if (w.length < 2) return;
-    if (found.includes(w)) { setFlash({ text: w, kind: "dup" }); return; }
+    const dup = (text: string) => {
+      setFlash({ text, kind: "dup" });
+      setDupWord(w); setDupKey((k) => k + 1);
+      haptic("error", settings.vibration);
+      sfx("duplicate", settings.sound);
+    };
+    if (found.includes(w)) { dup(`${w} · Already found`); return; }
     if (!words.includes(w)) {
       if (isBonusWord(w, data.letters, words)) {
-        if (bonusFound.includes(w)) { setFlash({ text: w, kind: "dup" }); return; }
+        if (bonusFound.includes(w)) { dup(`${w} · Already in 📖`); setJarPulse((k) => k + 1); return; }
         const { jar, reward } = fillJar(progress.jar ?? 0);
         setProgress((p) => ({ ...p, jar, coins: p.coins + reward, bonus: { ...(p.bonus ?? {}), [level]: [...(p.bonus?.[level] ?? []), w] } }));
         setFlash({ text: reward ? `Jar full! +${reward} 🪙` : `Bonus! ${w}`, kind: "ok" });
@@ -525,7 +538,7 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
           {words.map((w) => {
             const isFound = found.includes(w);
             return (
-              <div key={w} className={`flex justify-center gap-1.5 ${isFound ? "cursor-pointer" : ""}`}
+              <div key={dupWord === w ? `${w}-dup${dupKey}` : w} className={`flex justify-center gap-1.5 rounded-lg ${isFound ? "cursor-pointer" : ""} ${dupWord === w ? "dup-glow animate-shake" : ""}`}
                 role={isFound ? "button" : undefined} aria-label={isFound ? `Meaning of ${w}` : undefined}
                 onClick={isFound ? () => setMeaningWord(w) : undefined}>
                 {w.split("").map((ch, i) => {
@@ -585,10 +598,21 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
             <div className="glass w-full max-w-xs rounded-3xl p-5 text-center font-display text-cream" onClick={(e) => e.stopPropagation()}>
               <h3 className="text-2xl font-bold">📖 Bonus Words</h3>
               <p className="mt-1 text-sm opacity-80">Every {JAR_SIZE} bonus words → {JAR_REWARD} 🪙 ({progress.jar ?? 0}/{JAR_SIZE})</p>
+              {bonusFound.length > 0 && <p className="mt-1 text-xs opacity-70">Tap a word to see its meaning ({MEANING_COST} 🪙)</p>}
               <div className="mt-3 max-h-60 overflow-y-auto">
                 {bonusFound.length ? (
                   <ul className="flex flex-wrap justify-center gap-2">
-                    {bonusFound.map((w) => <li key={w} className="rounded-lg bg-card px-3 py-1 font-bold tracking-wider text-navy">{w}</li>)}
+                    {bonusFound.map((w) => {
+                      const open = (progress.meanings ?? []).includes(w);
+                      return (
+                        <li key={w}>
+                          <button type="button" onClick={() => setMeaningWord(w)} aria-label={`Meaning of ${w}`}
+                            className={`flex items-center gap-1 rounded-lg bg-card px-3 py-1 font-bold tracking-wider text-navy ${dupWord === w ? "dup-glow" : ""}`}>
+                            {w}<span className="text-xs opacity-70">{open ? "📘" : `🔒${MEANING_COST}`}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 ) : <p className="opacity-80">None yet — keep trying!</p>}
               </div>
@@ -604,6 +628,7 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
             <span className={`rounded-xl px-4 py-1.5 font-display text-2xl font-bold tracking-widest ${
               flash?.kind === "bad" ? "animate-shake bg-destructive text-destructive-foreground"
               : flash?.kind === "ok" ? "animate-pop bg-primary text-primary-foreground"
+              : flash?.kind === "dup" ? "animate-shake bg-gold text-navy dup-glow"
               : "bg-card text-navy"}`}>
               {current || flash?.text}
             </span>
