@@ -766,7 +766,7 @@ function Confetti() {
   );
 }
 
-function CompleteScreen({ level, gain, stars, hasNext, onNext, onHome }: { level: number; gain: number; stars: number; hasNext: boolean; onNext: () => void; onHome: () => void }) {
+function CompleteScreen({ level, gain, stars, hasNext, onNext, onHome, onPeek }: { level: number; gain: number; stars: number; hasNext: boolean; onNext: () => void; onHome: () => void; onPeek: () => void }) {
   const words = LEVELS[level - 1]!.words.length;
   return (
     <div className="relative flex flex-1 items-center justify-center bg-navy/50 p-6">
@@ -788,7 +788,10 @@ function CompleteScreen({ level, gain, stars, hasNext, onNext, onHome }: { level
           {hasNext ? (
             <button onClick={onNext} className="btn-game flex w-full items-center justify-center gap-2 py-3 text-lg"><Play className="h-5 w-5 fill-current" />Next Level</button>
           ) : <p className="font-display font-semibold text-navy">You finished every level! 🎉</p>}
-          <button onClick={onHome} className="flex items-center gap-2 rounded-full bg-card px-6 py-2 font-semibold text-navy shadow"><Home className="h-4 w-4" />Home</button>
+          <div className="flex gap-2">
+            <button onClick={onPeek} className="flex items-center gap-2 rounded-full bg-card px-5 py-2 font-semibold text-navy shadow">👁️ View Words</button>
+            <button onClick={onHome} className="flex items-center gap-2 rounded-full bg-card px-5 py-2 font-semibold text-navy shadow"><Home className="h-4 w-4" />Home</button>
+          </div>
         </div>
       </div>
     </div>
