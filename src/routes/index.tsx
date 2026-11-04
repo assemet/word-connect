@@ -706,9 +706,6 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
               className={`relative flex flex-col items-center gap-1 ${jarPulse ? "animate-pop" : ""}`}>
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-navy/80 text-2xl shadow-lg">📖</span>
               <span className="rounded-full bg-navy/80 px-2 text-xs font-bold text-primary-foreground">{progress.jar ?? 0}/{JAR_SIZE}</span>
-              {bonusFound.length > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-xs font-bold text-navy">{bonusFound.length}</span>
-              )}
             </button>
             <PowerBtn icon={<Lightbulb className="h-6 w-6 text-gold" />} cost={HINT_COST} onClick={hint} label="Hint" />
           </div>
