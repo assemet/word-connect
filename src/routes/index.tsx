@@ -330,7 +330,7 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
   const bonusFound = progress.bonus?.[level] ?? [];
   const treasure = useMemo(() => treasureFor(level, words), [level, words]);
   const world = worldOf(level);
-  const relicsGot = relicLevels(world).filter((l) => (progress.treasures ?? []).includes(l)).length;
+  const relicsGot = relicLevels(world + 1).filter((l) => (progress.treasures ?? []).includes(l)).length;
   const [jarPulse, setJarPulse] = useState(0);
   const [showJar, setShowJar] = useState(false);
   const [dupWord, setDupWord] = useState<string | null>(null);
@@ -438,7 +438,14 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
         if (bonusFound.includes(w)) { dup(`${w} · Already in 📖`); setJarPulse((k) => k + 1); return; }
         const { jar, reward } = fillJar(progress.jar ?? 0);
         setProgress((p) => ({ ...p, jar, coins: p.coins + reward, bonus: { ...(p.bonus ?? {}), [level]: [...(p.bonus?.[level] ?? []), w] } }));
-        setFlash({ text: reward ? `Jar full! +${reward} 🪙` : `Bonus! ${w}`, kind: "ok" });
+        setFlash({ text: reward ? `📖 Book full! +${reward} 🪙` : `Bonus! ${w}`, kind: "ok" });
+        if (reward) {
+          const r = coinRef.current?.getBoundingClientRect();
+          const dx = r ? r.left + r.width / 2 - window.innerWidth / 2 : 0;
+          const dy = r ? r.top + r.height / 2 - window.innerHeight / 2 : 0;
+          setRelicFly({ src: gemImg, name: `📖 +${reward} Coins`, dx, dy });
+          setTimeout(() => { setRelicFly(null); setCoinPulse((n) => n + 1); sfx("word", settings.sound); burst(coinRef.current); }, 2300);
+        }
         setJarPulse((k) => k + 1);
         haptic("success", settings.vibration);
         sfx(reward ? "gem" : "bonus", settings.sound);
@@ -613,8 +620,8 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
               <h3 className="text-2xl font-bold">World Relics</h3>
               <p className="mt-1 text-sm opacity-80">{worldName(world)} · find all {RELICS_PER_WORLD} → {RELIC_REWARD} 🪙</p>
               <div className="mt-4 flex justify-center gap-3">
-                {relicIcons(world).map((ic, k) => {
-                  const lv = relicLevels(world)[k]!;
+                {relicIcons(world + 1).map((ic, k) => {
+                  const lv = relicLevels(world + 1)[k]!;
                   const got = (progress.treasures ?? []).includes(lv);
                   const art = relicArt(ic);
                   return (
