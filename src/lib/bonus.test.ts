@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fillJar, isBonusWord, JAR_REWARD, JAR_SIZE } from "./bonus";
+import { fillJar, levelJar, isBonusWord, JAR_REWARD, JAR_SIZE } from "./bonus";
 
 describe("bonus words", () => {
   it("jar pays 15 coins every 5 bonus words", () => {
@@ -16,5 +16,12 @@ describe("bonus words", () => {
   });
   it("accepts common real words like ELBOW, BLOW, BOWL", () => {
     for (const w of ["ELBOW", "BLOW", "BOWL", "LOB", "OWE"]) expect(isBonusWord(w, "LEWBO", [])).toBe(true);
+  });
+  it("each level's counter starts at 0 and resets after 5", () => {
+    expect(levelJar(0)).toBe(0);
+    expect(levelJar(4)).toBe(4);
+    expect(levelJar(5)).toBe(0);
+    expect(levelJar(7)).toBe(2);
+    expect(fillJar(levelJar(4)).reward).toBe(15);
   });
 });
