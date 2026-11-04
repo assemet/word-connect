@@ -436,8 +436,12 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
     if (!words.includes(w)) {
       if (isBonusWord(w, data.letters, words)) {
         if (bonusFound.includes(w)) { dup(`${w} · Already in 📖`); setJarPulse((k) => k + 1); return; }
-        const { jar, reward } = fillJar(progress.jar ?? 0);
-        setProgress((p) => ({ ...p, jar, coins: p.coins + reward, bonus: { ...(p.bonus ?? {}), [level]: [...(p.bonus?.[level] ?? []), w] } }));
+        const { reward } = fillJar(progress.jar ?? 0);
+        setProgress((p) => {
+          if ((p.bonus?.[level] ?? []).includes(w)) return p;
+          const f = fillJar(p.jar ?? 0);
+          return { ...p, jar: f.jar, coins: p.coins + f.reward, bonus: { ...(p.bonus ?? {}), [level]: [...(p.bonus?.[level] ?? []), w] } };
+        });
         setFlash({ text: reward ? `📖 Book full! +${reward} 🪙` : `Bonus! ${w}`, kind: "ok" });
         if (reward) {
           const r = coinRef.current?.getBoundingClientRect();
@@ -652,7 +656,14 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 p-6" onClick={() => setShowJar(false)}>
             <div className="glass w-full max-w-xs rounded-3xl p-5 text-center font-display text-cream" onClick={(e) => e.stopPropagation()}>
               <h3 className="text-2xl font-bold">📖 Bonus Words</h3>
-              <p className="mt-1 text-sm opacity-80">Every {JAR_SIZE} bonus words → {JAR_REWARD} 🪙 ({progress.jar ?? 0}/{JAR_SIZE})</p>
+              <p className="mt-1 text-sm opacity-80">Every {JAR_SIZE} bonus words → {JAR_REWARD} 🪙</p>
+              <div className="mx-auto mt-2 flex justify-center gap-1.5">
+                {Array.from({ length: JAR_SIZE }, (_, i) => (
+                  <span key={i} className={`h-3 w-3 rounded-full ${i < (progress.jar ?? 0) ? "bg-gold" : "bg-cream/30"}`} />
+                ))}
+              </div>
+              <p className="mt-1 text-xs opacity-80">Next reward: {progress.jar ?? 0}/{JAR_SIZE} · {JAR_SIZE - (progress.jar ?? 0)} more for +{JAR_REWARD} 🪙</p>
+              <p className="mt-1 text-xs opacity-70">This level: {bonusFound.length} words · Counter carries over between levels</p>
               {bonusFound.length > 0 && <p className="mt-1 text-xs opacity-70">Tap a word to see its meaning ({MEANING_COST} 🪙)</p>}
               <div className="mt-3 max-h-60 overflow-y-auto">
                 {bonusFound.length ? (
@@ -695,9 +706,6 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
               className={`relative flex flex-col items-center gap-1 ${jarPulse ? "animate-pop" : ""}`}>
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-navy/80 text-2xl shadow-lg">📖</span>
               <span className="rounded-full bg-navy/80 px-2 text-xs font-bold text-primary-foreground">{progress.jar ?? 0}/{JAR_SIZE}</span>
-              {bonusFound.length > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-xs font-bold text-navy">{bonusFound.length}</span>
-              )}
             </button>
             <PowerBtn icon={<Lightbulb className="h-6 w-6 text-gold" />} cost={HINT_COST} onClick={hint} label="Hint" />
           </div>
