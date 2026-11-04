@@ -30,3 +30,8 @@ export function fillJar(jar: number) {
   const n = jar + 1;
   return n >= JAR_SIZE ? { jar: 0, reward: JAR_REWARD } : { jar: n, reward: 0 };
 }
+
+/** Per-level jar progress: each level starts at 0 and resets after every reward. */
+export function levelJar(levelBonusCount: number) {
+  return levelBonusCount % JAR_SIZE;
+}

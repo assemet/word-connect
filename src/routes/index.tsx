@@ -17,7 +17,7 @@ const CLUE_COST = 30;
 const LEVEL_REWARD = 10;
 const AD_REWARD = 50;
 import { WordMeaning } from "@/components/WordMeaning";
-import { fillJar, isBonusWord, JAR_SIZE, JAR_REWARD } from "@/lib/bonus";
+import { fillJar, levelJar, isBonusWord, JAR_SIZE, JAR_REWARD } from "@/lib/bonus";
 import { claimReward, relicIcons, relicLevels, treasureFor, RELICS_PER_WORLD, RELIC_REWARD } from "@/lib/treasures";
 import { relicArt, RELIC_CHEST } from "@/lib/relicArt";
 
@@ -436,11 +436,12 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
     if (!words.includes(w)) {
       if (isBonusWord(w, data.letters, words)) {
         if (bonusFound.includes(w)) { dup(`${w} · Already in 📖`); setJarPulse((k) => k + 1); return; }
-        const { reward } = fillJar(progress.jar ?? 0);
+        const { reward } = fillJar(levelJar(bonusFound.length));
         setProgress((p) => {
-          if ((p.bonus?.[level] ?? []).includes(w)) return p;
-          const f = fillJar(p.jar ?? 0);
-          return { ...p, jar: f.jar, coins: p.coins + f.reward, bonus: { ...(p.bonus ?? {}), [level]: [...(p.bonus?.[level] ?? []), w] } };
+          const prev = p.bonus?.[level] ?? [];
+          if (prev.includes(w)) return p;
+          const f = fillJar(levelJar(prev.length));
+          return { ...p, coins: p.coins + f.reward, bonus: { ...(p.bonus ?? {}), [level]: [...(p.bonus?.[level] ?? []), w] } };
         });
         setFlash({ text: reward ? `📖 Book full! +${reward} 🪙` : `Bonus! ${w}`, kind: "ok" });
         if (reward) {
@@ -659,11 +660,11 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
               <p className="mt-1 text-sm opacity-80">Every {JAR_SIZE} bonus words → {JAR_REWARD} 🪙</p>
               <div className="mx-auto mt-2 flex justify-center gap-1.5">
                 {Array.from({ length: JAR_SIZE }, (_, i) => (
-                  <span key={i} className={`h-3 w-3 rounded-full ${i < (progress.jar ?? 0) ? "bg-gold" : "bg-cream/30"}`} />
+                  <span key={i} className={`h-3 w-3 rounded-full ${i < levelJar(bonusFound.length) ? "bg-gold" : "bg-cream/30"}`} />
                 ))}
               </div>
-              <p className="mt-1 text-xs opacity-80">Next reward: {progress.jar ?? 0}/{JAR_SIZE} · {JAR_SIZE - (progress.jar ?? 0)} more for +{JAR_REWARD} 🪙</p>
-              <p className="mt-1 text-xs opacity-70">This level: {bonusFound.length} words · Counter carries over between levels</p>
+              <p className="mt-1 text-xs opacity-80">Next reward: {progress.jar ?? 0}/{JAR_SIZE} · {JAR_SIZE - levelJar(bonusFound.length)} more for +{JAR_REWARD} 🪙</p>
+              <p className="mt-1 text-xs opacity-70">This level: {bonusFound.length} words · Each level starts from 0</p>
               {bonusFound.length > 0 && <p className="mt-1 text-xs opacity-70">Tap a word to see its meaning ({MEANING_COST} 🪙)</p>}
               <div className="mt-3 max-h-60 overflow-y-auto">
                 {bonusFound.length ? (
