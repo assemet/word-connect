@@ -663,7 +663,7 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
                   <span key={i} className={`h-3 w-3 rounded-full ${i < levelJar(bonusFound.length) ? "bg-gold" : "bg-cream/30"}`} />
                 ))}
               </div>
-              <p className="mt-1 text-xs opacity-80">Next reward: {progress.jar ?? 0}/{JAR_SIZE} · {JAR_SIZE - levelJar(bonusFound.length)} more for +{JAR_REWARD} 🪙</p>
+              <p className="mt-1 text-xs opacity-80">Next reward: {levelJar(bonusFound.length)}/{JAR_SIZE} · {JAR_SIZE - levelJar(bonusFound.length)} more for +{JAR_REWARD} 🪙</p>
               <p className="mt-1 text-xs opacity-70">This level: {bonusFound.length} words · Each level starts from 0</p>
               {bonusFound.length > 0 && <p className="mt-1 text-xs opacity-70">Tap a word to see its meaning ({MEANING_COST} 🪙)</p>}
               <div className="mt-3 max-h-60 overflow-y-auto">
@@ -706,7 +706,7 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
             <button key={jarPulse} type="button" aria-label="Bonus words" onClick={() => setShowJar(true)}
               className={`relative flex flex-col items-center gap-1 ${jarPulse ? "animate-pop" : ""}`}>
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-navy/80 text-2xl shadow-lg">📖</span>
-              <span className="rounded-full bg-navy/80 px-2 text-xs font-bold text-primary-foreground">{progress.jar ?? 0}/{JAR_SIZE}</span>
+              <span className="rounded-full bg-navy/80 px-2 text-xs font-bold text-primary-foreground">{levelJar(bonusFound.length)}/{JAR_SIZE}</span>
             </button>
             <PowerBtn icon={<Lightbulb className="h-6 w-6 text-gold" />} cost={HINT_COST} onClick={hint} label="Hint" />
           </div>
