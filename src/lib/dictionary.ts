@@ -11,7 +11,14 @@ export const LANGUAGES = [
   { code: "tr", name: "Türkçe" },
 ] as const;
 
-export type Meaning = { partOfSpeech?: string; definition?: string; example?: string };
+export type Meaning = { partOfSpeech?: string; definition?: string; example?: string; audio?: string };
+
+/** Picks a real recorded pronunciation (prefers US), or undefined when none exists. */
+export function pickAudio(entries: any[]): string | undefined {
+  const urls: string[] = (entries ?? []).flatMap((e: any) => (e?.phonetics ?? []).map((p: any) => p?.audio)).filter((u: any) => typeof u === "string" && u.length > 0);
+  const url = urls.find((u) => u.includes("-us")) ?? urls[0];
+  return url ? (url.startsWith("//") ? `https:${url}` : url) : undefined;
+}
 
 /** True when the player can afford to unlock a meaning. */
 export function canUnlockMeaning(coins: number, alreadyUnlocked: boolean) {
@@ -24,7 +31,7 @@ export async function fetchMeaning(word: string): Promise<Meaning> {
   const json = await res.json();
   const m = json?.[0]?.meanings?.[0];
   const d = m?.definitions?.[0];
-  return { partOfSpeech: m?.partOfSpeech, definition: d?.definition, example: d?.example };
+  return { partOfSpeech: m?.partOfSpeech, definition: d?.definition, example: d?.example, audio: pickAudio(json) };
 }
 
 export async function fetchTranslation(word: string, lang: string): Promise<string> {

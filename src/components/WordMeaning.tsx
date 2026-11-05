@@ -26,7 +26,12 @@ export function WordMeaning({ word, unlocked, coins, lang, setLang, onUnlock, on
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-navy/60 p-6" onClick={onClose}>
       <div className="animate-pop relative w-full max-w-xs rounded-3xl bg-cream p-5 text-navy shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <button onClick={onClose} aria-label="Close" className="absolute right-3 top-3 rounded-full p-1 hover:bg-card"><X className="h-5 w-5" /></button>
-        <div className="flex items-center gap-2"><BookOpen className="h-5 w-5 text-primary" /><h2 className="font-display text-3xl font-bold tracking-widest">{word}</h2></div>
+        <div className="flex items-center gap-2"><BookOpen className="h-5 w-5 text-primary" /><h2 className="font-display text-3xl font-bold tracking-widest">{word}</h2>
+          {unlocked && meaning?.audio && (
+            <button type="button" aria-label="Play pronunciation" onClick={() => { new Audio(meaning.audio).play().catch(() => {}); }}
+              className="rounded-full bg-card p-1.5 text-xl shadow hover:scale-110">🔊</button>
+          )}
+        </div>
 
         {!unlocked ? (
           <div className="mt-4 text-center">
