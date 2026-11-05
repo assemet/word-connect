@@ -20,6 +20,39 @@ export function pickAudio(entries: any[]): string | undefined {
   return url ? (url.startsWith("//") ? `https:${url}` : url) : undefined;
 }
 
+/** Ordered list of real-recording URLs to try: Oxford (Google) first, then the dictionary API's own. */
+export function pronunciationUrls(word: string, apiAudio?: string): string[] {
+  const w = encodeURIComponent(word.toLowerCase());
+  return [
+    `https://ssl.gstatic.com/dictionary/static/sounds/oxford/${w}--_us_1.mp3`,
+    `https://ssl.gstatic.com/dictionary/static/sounds/oxford/${w}--_gb_1.mp3`,
+    ...(apiAudio ? [apiAudio] : []),
+  ];
+}
+
+function playUrl(url: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const a = new Audio(url);
+    a.onended = () => resolve();
+    a.onerror = () => reject(new Error("audio"));
+    a.play().catch(reject);
+  });
+}
+
+/** Plays a real recording when reachable; falls back to the device voice. */
+export async function speakWord(word: string, apiAudio?: string): Promise<void> {
+  for (const u of pronunciationUrls(word, apiAudio)) {
+    try { await playUrl(u); return; } catch { /* try next */ }
+  }
+  if (typeof window !== "undefined" && "speechSynthesis" in window) {
+    await new Promise<void>((resolve) => {
+      const u = new SpeechSynthesisUtterance(word.toLowerCase());
+      u.lang = "en-US"; u.onend = () => resolve(); u.onerror = () => resolve();
+      window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+    });
+  }
+}
+
 /** True when the player can afford to unlock a meaning. */
 export function canUnlockMeaning(coins: number, alreadyUnlocked: boolean) {
   return alreadyUnlocked || coins >= MEANING_COST;
