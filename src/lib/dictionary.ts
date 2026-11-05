@@ -11,7 +11,7 @@ export const LANGUAGES = [
   { code: "tr", name: "Türkçe" },
 ] as const;
 
-export type Meaning = { partOfSpeech?: string; definition?: string; example?: string; audio?: string };
+export type Meaning = { partOfSpeech?: string; definition?: string; example?: string; audio?: string | undefined };
 
 /** Picks a real recorded pronunciation (prefers US), or undefined when none exists. */
 export function pickAudio(entries: any[]): string | undefined {
