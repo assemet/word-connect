@@ -11,6 +11,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useBackgroundMusic } from "@/hooks/useBackgroundMusic";
 import { initTelegram, haptic, beep, sfx } from "@/lib/telegram";
 import gemImg from "@/assets/relics/gem.png";
+import bookImg from "@/assets/relics/book.webp";
 import { scoreForWord, shuffle, HINT_COST, REVEAL_COST } from "@/lib/game";
 import { MEANING_COST, fetchMeaning } from "@/lib/dictionary";
 const CLUE_COST = 30;
@@ -448,7 +449,7 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
           const r = coinRef.current?.getBoundingClientRect();
           const dx = r ? r.left + r.width / 2 - window.innerWidth / 2 : 0;
           const dy = r ? r.top + r.height / 2 - window.innerHeight / 2 : 0;
-          setRelicFly({ src: gemImg, name: `📖 +${reward} Coins`, dx, dy });
+          setRelicFly({ src: bookImg, name: `📖 +${reward} Coins`, dx, dy });
           setTimeout(() => { setRelicFly(null); setCoinPulse((n) => n + 1); sfx("word", settings.sound); burst(coinRef.current); }, 2300);
         }
         setJarPulse((k) => k + 1);
