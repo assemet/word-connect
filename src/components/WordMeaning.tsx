@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Coins, X, BookOpen } from "lucide-react";
-import { LANGUAGES, MEANING_COST, fetchMeaning, fetchTranslation, type Meaning } from "@/lib/dictionary";
+import { LANGUAGES, MEANING_COST, fetchMeaning, fetchTranslation, speakWord, type Meaning } from "@/lib/dictionary";
 
 export function WordMeaning({ word, unlocked, coins, lang, setLang, onUnlock, onClose }: {
   word: string; unlocked: boolean; coins: number; lang: string;
@@ -9,6 +9,7 @@ export function WordMeaning({ word, unlocked, coins, lang, setLang, onUnlock, on
   const [meaning, setMeaning] = useState<Meaning | null>(null);
   const [translation, setTranslation] = useState<string | null>(null);
   const [error, setError] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
 
   useEffect(() => {
     if (!unlocked) return;
@@ -27,9 +28,9 @@ export function WordMeaning({ word, unlocked, coins, lang, setLang, onUnlock, on
       <div className="animate-pop relative w-full max-w-xs rounded-3xl bg-cream p-5 text-navy shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <button onClick={onClose} aria-label="Close" className="absolute right-3 top-3 rounded-full p-1 hover:bg-card"><X className="h-5 w-5" /></button>
         <div className="flex items-center gap-2"><BookOpen className="h-5 w-5 text-primary" /><h2 className="font-display text-3xl font-bold tracking-widest">{word}</h2>
-          {unlocked && meaning?.audio && (
-            <button type="button" aria-label="Play pronunciation" onClick={() => { new Audio(meaning.audio).play().catch(() => {}); }}
-              className="rounded-full bg-card p-1.5 text-xl shadow hover:scale-110">🔊</button>
+          {unlocked && meaning && (
+            <button type="button" aria-label="Play pronunciation" onClick={() => { setSpeaking(true); speakWord(word, meaning.audio).finally(() => setSpeaking(false)); }}
+              className={`rounded-full bg-card p-1.5 text-xl shadow hover:scale-110 ${speaking ? "animate-pulse scale-110" : ""}`}>🔊</button>
           )}
         </div>
 
