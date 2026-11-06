@@ -5,7 +5,7 @@ import {
   Play, HelpCircle, Settings as SettingsIcon, ChevronLeft, Lock, Star, Home, LayoutGrid,
   Shuffle, Lightbulb, Volume2, Music, Smartphone, Trash2, Coins, CheckCircle2, Sparkles,
 } from "lucide-react";
-import { backgroundForScreen, backgroundForLevel } from "@/lib/backgrounds";
+import { backgroundForScreen, backgroundForLevel, gameBackgroundForLevel } from "@/lib/backgrounds";
 import { WORLD_COUNT, worldName, worldOf, worldRange } from "@/lib/worlds";
 import { LEVELS } from "@/data/words";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -757,7 +757,7 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
             ))}
           </div>
           <div className="flex flex-col items-center gap-3">
-            <button type="button" aria-label="Ask friends for help" onClick={() => shareCard({ kind: "help", level, world: worldName(world), letters: data.letters, words, found })}
+            <button type="button" aria-label="Ask friends for help" onClick={() => shareCard({ kind: "help", level, world: worldName(world), letters: data.letters, words, found, bg: gameBackgroundForLevel(level) })}
               className="flex flex-col items-center gap-1">
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-navy/80 text-2xl shadow-lg">👥</span>
               <span className="rounded-full bg-navy/80 px-2 text-xs font-bold text-primary-foreground">Help</span>
@@ -844,7 +844,7 @@ function CompleteScreen({ level, gain, stars, hasNext, onNext, onHome, onPeek }:
             <button onClick={onNext} className="btn-game flex w-full items-center justify-center gap-2 py-3 text-lg"><Play className="h-5 w-5 fill-current" />Next Level</button>
           ) : <p className="font-display font-semibold text-navy">You finished every level! 🎉</p>}
           <div className="flex flex-wrap justify-center gap-2">
-            <button onClick={() => shareCard({ kind: "win", level, world: worldName(worldOf(level)), stars })} className="flex items-center gap-2 rounded-full bg-card px-4 py-2 font-semibold text-navy shadow">📤 Share</button>
+            <button onClick={() => shareCard({ kind: "win", level, world: worldName(worldOf(level)), stars, bg: gameBackgroundForLevel(level) })} className="flex items-center gap-2 rounded-full bg-card px-4 py-2 font-semibold text-navy shadow">📤 Share</button>
             <button onClick={onPeek} className="flex items-center gap-2 rounded-full bg-card px-5 py-2 font-semibold text-navy shadow">👁️ View Words</button>
             <button onClick={onHome} className="flex items-center gap-2 rounded-full bg-card px-5 py-2 font-semibold text-navy shadow"><Home className="h-4 w-4" />Home</button>
           </div>
