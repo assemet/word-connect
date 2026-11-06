@@ -840,8 +840,8 @@ function CompleteScreen({ level, gain, stars, hasNext, onNext, onHome, onPeek }:
           {hasNext ? (
             <button onClick={onNext} className="btn-game flex w-full items-center justify-center gap-2 py-3 text-lg"><Play className="h-5 w-5 fill-current" />Next Level</button>
           ) : <p className="font-display font-semibold text-navy">You finished every level! 🎉</p>}
-          <button onClick={() => shareCard({ kind: "win", level, world: worldName(worldOf(level)), stars, bg: gameBackgroundForLevel(level) })} className="victory-glow flex w-full items-center justify-center gap-2 rounded-full border-2 border-gold bg-navy py-3 font-display text-lg font-bold text-gold shadow-lg active:scale-95">📤 Share your win on Telegram</button>
           <div className="flex flex-wrap justify-center gap-2">
+            <button onClick={() => shareCard({ kind: "win", level, world: worldName(worldOf(level)), stars, bg: gameBackgroundForLevel(level) })} className="flex items-center gap-2 rounded-full bg-card px-4 py-2 font-semibold text-navy shadow">📤 Share</button>
             <button onClick={onPeek} className="flex items-center gap-2 rounded-full bg-card px-5 py-2 font-semibold text-navy shadow">👁️ View Words</button>
             <button onClick={onHome} className="flex items-center gap-2 rounded-full bg-card px-5 py-2 font-semibold text-navy shadow"><Home className="h-4 w-4" />Home</button>
           </div>

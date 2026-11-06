@@ -181,7 +181,3 @@
   50% { box-shadow: 0 0 18px 6px var(--gold); }
 }
 .dup-glow { animation: dup-glow 0.4s ease-in-out 3; }
-
-/* Telegram Mini App: stop the WebView from dragging/bouncing the app down */
-html, body { overscroll-behavior: none; height: 100%; overflow: hidden; }
-body > * { height: 100%; overflow: auto; overscroll-behavior: contain; }

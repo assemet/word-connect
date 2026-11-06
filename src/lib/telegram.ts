@@ -7,8 +7,6 @@ export function initTelegram() {
   if (!w) return;
   w.ready();
   w.expand();
-  try { w.disableVerticalSwipes?.(); } catch {}
-  try { w.enableClosingConfirmation?.(); } catch {}
 }
 export function haptic(kind: "light" | "success" | "error", enabled: boolean) {
   if (!enabled) return;
