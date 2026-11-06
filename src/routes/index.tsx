@@ -576,6 +576,8 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
         </div>
       )}
       <Header title={<span>Level {level} <span className="text-sm opacity-80">· {worldName(worldOf(level))}</span></span>} back={back}>
+        <button type="button" aria-label="Ask friends for help" onClick={() => shareCard({ kind: "help", level, world: worldName(world), letters: data.letters, words, found, bg: gameBackgroundForLevel(level) })}
+          className="glass flex h-8 w-8 items-center justify-center rounded-full text-lg">👥</button>
         <Pill icon={<Star className="h-4 w-4 fill-gold text-gold" />} value={totalStars} />
         <span ref={coinRef} key={`c${coinPulse}`} className={coinPulse ? "coin-bump" : ""}>
           <Pill icon={<Coins className="h-4 w-4 text-gold" />} value={progress.coins} />
@@ -757,11 +759,6 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
             ))}
           </div>
           <div className="flex flex-col items-center gap-3">
-            <button type="button" aria-label="Ask friends for help" onClick={() => shareCard({ kind: "help", level, world: worldName(world), letters: data.letters, words, found, bg: gameBackgroundForLevel(level) })}
-              className="flex flex-col items-center gap-1">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-navy/80 text-2xl shadow-lg">👥</span>
-              <span className="rounded-full bg-navy/80 px-2 text-xs font-bold text-primary-foreground">Help</span>
-            </button>
             <PowerBtn icon={clueLoading ? <span className="animate-spin text-xl">⏳</span> : <span className="text-2xl">🔍</span>} cost={CLUE_COST} onClick={showClue} label="Word clue" />
             <button ref={relicBtnRef} key={`r${relicPulse}`} type="button" aria-label="World relics" onClick={() => setShowRelics(true)}
               className={`relative flex flex-col items-center gap-1 ${relicPulse ? "animate-pop" : ""}`}>
