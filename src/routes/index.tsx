@@ -66,9 +66,12 @@ function App() {
   const [world, setWorld] = useState<number | null>(null);
   useBackgroundMusic(settingsLoaded && settings.music);
 
+  useEffect(() => { const img = new Image(); img.src = background; }, [background]);
 
   const totalStars = Object.values(progress.stars).reduce((a, b) => a + b, 0);
-  useEffect(() => { const img = new Image(); img.src = background; }, [background]);
+  const background = screen === "levels" && world !== null
+    ? backgroundForLevel(world * 20 + 1)
+    : backgroundForScreen(screen === "complete" ? "game" : screen, level, progress.unlocked);
 
   const startLevel = (n: number) => {
     const img = new Image();
