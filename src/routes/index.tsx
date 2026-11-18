@@ -73,7 +73,12 @@ function App() {
     ? backgroundForLevel(world * 20 + 1)
     : backgroundForScreen(screen === "complete" ? "game" : screen, level, progress.unlocked);
 
-  const startLevel = (n: number) => { setLevel(n); setWorld(worldOf(n)); setScreen("game"); setPeek(false); };
+  const startLevel = (n: number) => {
+    const img = new Image();
+    img.src = backgroundForScreen("game", n, progress.unlocked);
+    const go = () => { setLevel(n); setWorld(worldOf(n)); setScreen("game"); setPeek(false); };
+    if (img.complete) go(); else img.onload = go;
+  };
   const clearBoard = (n: number) =>
     setProgress((p) => ({ ...p, found: { ...p.found, [n]: [] }, revealed: { ...p.revealed, [n]: [] } }));
   const finishTo = (next: () => void) => { clearBoard(level); setPeek(false); next(); };
