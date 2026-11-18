@@ -133,7 +133,24 @@ async function draw(card: Card): Promise<HTMLCanvasElement> {
   return c;
 }
 
+function getCleanAppUrl(): string {
+  const tg = (window as any).Telegram?.WebApp;
+  const envUrl = import.meta.env.VITE_TELEGRAM_APP_URL as string | undefined;
+  if (envUrl) return envUrl;
+  const url = new URL(window.location.href);
+  url.hash = "";
+  url.searchParams.delete("tgWebAppData");
+  url.searchParams.delete("tgWebAppVersion");
+  url.searchParams.delete("tgWebAppPlatform");
+  url.searchParams.delete("tgWebAppThemeParams");
+  if (tg?.initDataUnsafe?.start_param) {
+    url.searchParams.set("startapp", tg.initDataUnsafe.start_param);
+  }
+  return url.toString();
+}
+
 export async function shareCard(card: Card): Promise<"shared" | "downloaded" | "cancelled"> {
+  const cleanUrl = getCleanAppUrl();
   const text = card.kind === "win"
     ? `I beat Level ${card.level} in Word Connect with ${card.stars}★! Can you beat me? 🎮`
     : `I'm stuck on Level ${card.level} in Word Connect! Letters: ${card.letters.split("").join(", ")}. Can you help me find the words? 🧩`;
@@ -141,14 +158,42 @@ export async function shareCard(card: Card): Promise<"shared" | "downloaded" | "
   const blob: Blob = await new Promise((r) => canvas.toBlob((b) => r(b!), "image/png"));
   const file = new File([blob], `word-connect-level-${card.level}.png`, { type: "image/png" });
   const nav: any = navigator;
-  if (nav.canShare?.({ files: [file] })) {
-    try { await nav.share({ files: [file], text }); return "shared"; }
-    catch { return "cancelled"; }
-  }
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
-  const url = `https://t.me/share/url?url=${encodeURIComponent(location.href)}&text=${encodeURIComponent(text)}`;
   const tg = (window as any).Telegram?.WebApp;
-  if (tg?.openTelegramLink) tg.openTelegramLink(url); else window.open(url, "_blank");
+
+  if (nav.canShare?.({ files: [file] })) {
+    try {
+      await nav.share({ files: [file], text: `${text}\n${cleanUrl}` });
+      return "shared";
+    } catch {
+      return "cancelled";
+    }
+  }
+
+  if (typeof tg?.shareToStory === "function") {
+    try {
+      const dataUrl = canvas.toDataURL("image/png");
+      tg.shareToStory(dataUrl, {
+        text,
+        widget_link: {
+          url: cleanUrl,
+          name: "Play Word Connect",
+        },
+      });
+      return "shared";
+    } catch {
+      // Fallback if story sharing is unavailable or cancelled
+    }
+  }
+
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = objectUrl;
+  a.download = file.name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+
+  const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(cleanUrl)}&text=${encodeURIComponent(text)}`;
+  if (tg?.openTelegramLink) tg.openTelegramLink(shareUrl);
+  else window.open(shareUrl, "_blank");
   return "downloaded";
 }
