@@ -22,8 +22,6 @@ import { WordMeaning } from "@/components/WordMeaning";
 import { fillJar, levelJar, isBonusWord, JAR_SIZE, JAR_REWARD } from "@/lib/bonus";
 import { claimReward, relicIcons, relicLevels, treasureFor, RELICS_PER_WORLD, RELIC_REWARD } from "@/lib/treasures";
 import { relicArt, RELIC_CHEST } from "@/lib/relicArt";
-import { useAdsgram } from "@/hooks/useAdsgram";
-import { useAdsIntegration } from "@/hooks/useAdsIntegration";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -179,71 +177,27 @@ function Header({ title, back, children }: { title: React.ReactNode; back: () =>
 }
 
 function RewardAd({ onClose, onReward }: { onClose: () => void; onReward: () => void }) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { initAdsgram, showAd, isInitialized } = useAdsgram();
-  
+  const [left, setLeft] = useState<number | null>(null);
   useEffect(() => {
-    initAdsgram("60542");
-  }, [initAdsgram]);
-
-  const handleWatchAd = async () => {
-    if (isLoading) return;
-    
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const result = await showAd();
-      
-      if (result.done) {
-        onReward();
-      } else {
-        setError('The user skipped the ad. Try again!');
-      }
-    } catch (err) {
-      const errorResult = err as any;
-      if (errorResult?.error) {
-        setError('An error occurred while watching the ad. Please try again.');
-      } else {
-        setError('You skipped the ad.');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+    if (left === null) return;
+    if (left <= 0) { onReward(); onClose(); return; }
+    const t = setTimeout(() => setLeft(left - 1), 1000);
+    return () => clearTimeout(t);
+  }, [left]);
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-navy/80 p-6">
       <div className="w-full max-w-xs rounded-3xl bg-card p-6 text-center text-card-foreground shadow-xl">
-        {!isInitialized || isLoading ? (
-          <div className="flex flex-col items-center">
-            <div className="text-5xl">🎬</div>
-            <h3 className="mt-2 text-xl font-bold">Need more coins?</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Watch a short video and get {AD_REWARD} 🪙</p>
-            <button 
-              onClick={handleWatchAd}
-              disabled={isLoading || !isInitialized}
-              className="mt-4 w-full rounded-full bg-gold py-3 font-bold text-navy disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Loading...' : 'Watch video +50 🪙'}
-            </button>
-            <button onClick={onClose} className="mt-2 w-full py-2 text-sm text-muted-foreground">No thanks</button>
-            {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center">
-            <div className="text-4xl animate-pulse">📺</div>
-            <p className="mt-3 font-semibold text-muted-foreground">AdsGram ready...</p>
-            <button 
-              onClick={handleWatchAd}
-              className="mt-4 w-full rounded-full bg-blue-500 py-3 font-bold text-white hover:bg-blue-600"
-            >
-              Watch video +{AD_REWARD} 🪙
-            </button>
-            <button onClick={onClose} className="mt-2 w-full py-2 text-sm text-muted-foreground">No thanks</button>
-          </div>
-        )}
+        {left === null ? (<>
+          <div className="text-5xl">🎬</div>
+          <h3 className="mt-2 text-xl font-bold">Need more coins?</h3>
+          <p className="mt-1 text-sm text-muted-foreground">Watch a short video and get {AD_REWARD} 🪙</p>
+          <button onClick={() => setLeft(5)} className="mt-4 w-full rounded-full bg-gold py-3 font-bold text-navy">Watch video +{AD_REWARD} 🪙</button>
+          <button onClick={onClose} className="mt-2 w-full py-2 text-sm text-muted-foreground">No thanks</button>
+        </>) : (<>
+          <div className="text-4xl animate-spin">⏳</div>
+          <p className="mt-3 font-semibold">Ad playing… {left}s</p>
+          <p className="mt-1 text-xs text-muted-foreground">Reward arrives when the video ends</p>
+        </>)}
       </div>
     </div>
   );
@@ -570,8 +524,6 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
     return () => clearTimeout(t);
   }, [flash]);
 
-  const { adOpen, setAdOpen, error, setError, triggerAd, isLoading, isInitialized } = useAdsIntegration();
-
   const spend = (cost: number) => {
     if (progress.coins < cost) { setFlash({ text: "Not enough coins", kind: "bad" }); setAdOpen(true); return false; }
     return true;
@@ -633,17 +585,9 @@ function GameScreen({ level, progress, setProgress, settings, totalStars, back, 
         <span ref={coinRef} key={`c${coinPulse}`} className={coinPulse ? "coin-bump" : ""}>
           <Pill icon={<Coins className="h-4 w-4 text-gold" />} value={progress.coins} />
         </span>
-        <button 
-          onClick={() => setAdOpen(true)} 
-          aria-label="Watch ad for free coins" 
-          className="rounded-full bg-gold px-2 py-1 text-xs font-bold text-navy ${isLoading ? 'opacity-50' : ''}" 
-          disabled={isLoading}
-        >
-          🎬+{AD_REWARD}
-        </button>
+        <button onClick={() => setAdOpen(true)} aria-label="Watch ad for free coins" className="rounded-full bg-gold px-2 py-1 text-xs font-bold text-navy">🎬+{AD_REWARD}</button>
       </Header>
-      {adOpen && <RewardAd onClose={() => setAdOpen(false)} onReward={() => { setProgress((p) => ({ ...p, coins: p.coins + AD_REWARD })); setCoinPulse((n) => n + 1); }} />
-      {error && <div className="fixed bottom-4 left-4 right-4 bg-destructive text-destructive-foreground p-3 rounded-lg z-[100]">{error}</div>}
+      {adOpen && <RewardAd onClose={() => setAdOpen(false)} onReward={() => { setProgress((p) => ({ ...p, coins: p.coins + AD_REWARD })); setCoinPulse((n) => n + 1); }} />}
       {notes && <SoundNotes key={notes.id} x={notes.x} y={notes.y} />}
       {clue && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 p-6" onClick={() => setClue(null)}>
