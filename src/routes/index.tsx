@@ -66,7 +66,7 @@ function App() {
   const [world, setWorld] = useState<number | null>(null);
   useBackgroundMusic(settingsLoaded && settings.music);
 
-  useEffect(() => initTelegram(), []);
+  useEffect(() => { const img = new Image(); img.src = background; }, [background]);
 
   const totalStars = Object.values(progress.stars).reduce((a, b) => a + b, 0);
   const background = screen === "levels" && world !== null
