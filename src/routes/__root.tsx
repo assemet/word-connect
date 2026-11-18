@@ -90,7 +90,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" },
     ],
-    scripts: [{ src: "https://telegram.org/js/telegram-web-app.js" }],
+    scripts: [
+      { src: "https://telegram.org/js/telegram-web-app.js" },
+      { src: "https://sad.adsgram.ai/js/sad.min.js" },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,

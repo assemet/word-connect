@@ -11,6 +11,7 @@ import { LEVELS } from "@/data/words";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useBackgroundMusic } from "@/hooks/useBackgroundMusic";
 import { initTelegram, haptic, beep, sfx } from "@/lib/telegram";
+import { showRewardedAd } from "@/lib/adsgram";
 import gemImg from "@/assets/relics/gem.png";
 import bookImg from "@/assets/relics/book.webp";
 import { scoreForWord, shuffle, HINT_COST, REVEAL_COST } from "@/lib/game";
@@ -177,27 +178,44 @@ function Header({ title, back, children }: { title: React.ReactNode; back: () =>
 }
 
 function RewardAd({ onClose, onReward }: { onClose: () => void; onReward: () => void }) {
-  const [left, setLeft] = useState<number | null>(null);
-  useEffect(() => {
-    if (left === null) return;
-    if (left <= 0) { onReward(); onClose(); return; }
-    const t = setTimeout(() => setLeft(left - 1), 1000);
-    return () => clearTimeout(t);
-  }, [left]);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleWatchVideo = async () => {
+    if (loading) return;
+    setLoading(true);
+    setErrorMsg(null);
+    const { done, error } = await showRewardedAd();
+    setLoading(false);
+    if (done) {
+      onReward();
+      onClose();
+    } else {
+      setErrorMsg(error || "Ad was not completed. Please try again.");
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-navy/80 p-6">
       <div className="w-full max-w-xs rounded-3xl bg-card p-6 text-center text-card-foreground shadow-xl">
-        {left === null ? (<>
-          <div className="text-5xl">🎬</div>
-          <h3 className="mt-2 text-xl font-bold">Need more coins?</h3>
-          <p className="mt-1 text-sm text-muted-foreground">Watch a short video and get {AD_REWARD} 🪙</p>
-          <button onClick={() => setLeft(5)} className="mt-4 w-full rounded-full bg-gold py-3 font-bold text-navy">Watch video +{AD_REWARD} 🪙</button>
-          <button onClick={onClose} className="mt-2 w-full py-2 text-sm text-muted-foreground">No thanks</button>
-        </>) : (<>
-          <div className="text-4xl animate-spin">⏳</div>
-          <p className="mt-3 font-semibold">Ad playing… {left}s</p>
-          <p className="mt-1 text-xs text-muted-foreground">Reward arrives when the video ends</p>
-        </>)}
+        <div className="text-5xl">🎬</div>
+        <h3 className="mt-2 text-xl font-bold">Need more coins?</h3>
+        <p className="mt-1 text-sm text-muted-foreground">Watch a short video and get {AD_REWARD} 🪙</p>
+        {errorMsg && (
+          <p className="mt-2 rounded-lg bg-destructive/15 px-3 py-1.5 text-xs font-medium text-destructive">
+            {errorMsg}
+          </p>
+        )}
+        <button
+          disabled={loading}
+          onClick={handleWatchVideo}
+          className="mt-4 w-full rounded-full bg-gold py-3 font-bold text-navy disabled:opacity-60"
+        >
+          {loading ? "Loading ad…" : `Watch video +${AD_REWARD} 🪙`}
+        </button>
+        <button disabled={loading} onClick={onClose} className="mt-2 w-full py-2 text-sm text-muted-foreground">
+          No thanks
+        </button>
       </div>
     </div>
   );
