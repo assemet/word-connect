@@ -1,5 +1,5 @@
 // AdsGram Reward Interstitial Integration
-// Block ID: 60542
+// Block ID: 60615
 
 interface ShowPromiseResult {
   done: boolean;
@@ -25,7 +25,7 @@ declare global {
   }
 }
 
-const ADSGRAM_BLOCK_ID = "60542";
+const ADSGRAM_BLOCK_ID = "60615";
 let adController: AdController | null = null;
 
 export function getAdsgramController(): AdController | null {
