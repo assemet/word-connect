@@ -1,5 +1,5 @@
 // AdsGram Reward Interstitial Integration
-// Block ID: 60615
+// Default Block ID: 60615 (override via VITE_ADSGRAM_BLOCK_ID)
 
 interface ShowPromiseResult {
   done: boolean;
@@ -25,15 +25,24 @@ declare global {
   }
 }
 
-const ADSGRAM_BLOCK_ID = "60615";
+const DEFAULT_BLOCK_ID = "60615";
+
+function getBlockId(): string {
+  const envId = (import.meta.env.VITE_ADSGRAM_BLOCK_ID as string | undefined)?.trim();
+  return envId && envId.length > 0 ? envId : DEFAULT_BLOCK_ID;
+}
+
 let adController: AdController | null = null;
+let initializedBlockId: string | null = null;
 
 export function getAdsgramController(): AdController | null {
   if (typeof window === "undefined" || !window.Adsgram) {
     return null;
   }
-  if (!adController) {
-    adController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
+  const blockId = getBlockId();
+  if (!adController || initializedBlockId !== blockId) {
+    adController = window.Adsgram.init({ blockId });
+    initializedBlockId = blockId;
   }
   return adController;
 }
